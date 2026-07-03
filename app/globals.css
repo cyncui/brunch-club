@@ -23,9 +23,9 @@
   --pill-bg: #201d17;
   --pill-fg: #f2ede1;
 
-  /* Aged-paper / foxing overlay strength on each cover (0–1). Very subtle;
-     bump up for heavier staining, down toward 0 to remove it. */
-  --stamp-paper-opacity: 0.05;
+  /* Aged-paper overlay strength on each cover (0–1). The scan is mostly white,
+     so only creases/specks show under multiply; bump up for heavier aging. */
+  --stamp-paper-opacity: 0.3;
 
   /* Rack-focus tuning (see PRD §6). */
   --focus-scale: 1.52;
@@ -171,13 +171,13 @@ body {
   opacity: 0.6;
   pointer-events: none;
 }
-/* Aged-paper / foxing treatment over the print. Tune --stamp-paper-opacity. */
+/* Aged-paper treatment over the print — a real creased-paper scan. White areas
+   leave the cover untouched under multiply; only the creases/specks show.
+   Tune --stamp-paper-opacity. */
 .stamp-paper {
   position: absolute;
   inset: 0;
-  background: url("/textures/paper.svg");
-  background-size: 300px 300px;
-  background-repeat: repeat;
+  background: url("/textures/texture.jpg") center / cover no-repeat;
   mix-blend-mode: multiply;
   opacity: var(--stamp-paper-opacity);
   pointer-events: none;
