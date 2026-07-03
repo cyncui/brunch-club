@@ -1,7 +1,8 @@
 import type { Book } from "./types";
 
-/** Deterministic placement of one stamp within the repeating base unit. */
-export type Placement = {
+/** One stamp placement (cell) within the repeating base unit. */
+export type Slot = {
+  bookId: number;
   /** Center x within the base unit (px). */
   x: number;
   /** Center y within the base unit (px). */
@@ -10,8 +11,6 @@ export type Placement = {
   width: number;
   /** Resting rotation (deg). Always 0 — an upright grid. */
   rotation: number;
-  /** Stable per-book seed, reused for texture/franking variation. */
-  seed: number;
 };
 
 export type CanvasLayout = {
@@ -19,11 +18,9 @@ export type CanvasLayout = {
   unitW: number;
   /** Height of the repeating tile unit (px). */
   unitH: number;
-  /** Placement keyed by book id. */
-  placements: Record<number, Placement>;
-  /** Book ids in placement order. */
-  order: number[];
-  /** Canvas position of the masthead (center of the reserved gap). */
+  /** Every cell of the unit, filled (books cycle to leave no gaps). */
+  slots: Slot[];
+  /** Canvas position of the masthead (center of the unit). */
   masthead: { x: number; y: number };
 };
 
@@ -46,49 +43,39 @@ const CELL_H = 246;
 const WIDTH_BUCKETS = [116, 132, 150];
 
 /**
- * Lay the books out in an upright grid that reserves a two-cell gap at the
- * center of the repeating unit for the masthead — so the masthead is part of
- * the canvas (it pans with the stamps) and no stamp ever sits behind it.
- * Deterministic from the book ids; tiles seamlessly.
+ * Fill an upright grid — every cell holds a stamp (books cycle so there are no
+ * empty cells), and it tiles seamlessly. The masthead sits at the unit center
+ * with its own clearing (see Canvas.tsx), so no stamp is visible behind it and
+ * there are no holes in the field.
  */
 export function computeLayout(books: Book[]): CanvasLayout {
+  const n = Math.max(1, books.length);
   const cols = COLS;
-  const reserved = 2; // the two middle cells of the center row
-  const rows = Math.max(3, Math.ceil((books.length + reserved) / cols));
-  const centerRow = Math.floor(rows / 2);
-  const resA = cols / 2 - 1; // 1
-  const resB = cols / 2; // 2
-  const isReserved = (r: number, c: number) =>
-    r === centerRow && (c === resA || c === resB);
+  const rows = Math.max(2, Math.ceil(n / cols));
 
   const unitW = cols * CELL_W;
   const unitH = rows * CELL_H;
 
-  // Cells available for stamps, in reading order, skipping the reserved gap.
-  const cells: { r: number; c: number }[] = [];
+  const slots: Slot[] = [];
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      if (!isReserved(r, c)) cells.push({ r, c });
+      const i = r * cols + c;
+      const book = books[i % n];
+      const rnd = rng(book.id * 131 + i * 17);
+      slots.push({
+        bookId: book.id,
+        x: (c + 0.5) * CELL_W,
+        y: (r + 0.5) * CELL_H,
+        width: WIDTH_BUCKETS[Math.floor(rnd() * WIDTH_BUCKETS.length)],
+        rotation: 0,
+      });
     }
   }
 
-  const placements: Record<number, Placement> = {};
-  const order: number[] = [];
-
-  books.forEach((book, i) => {
-    const cell = cells[i % cells.length];
-    const r = rng(book.id);
-    const x = (cell.c + 0.5) * CELL_W;
-    const y = (cell.r + 0.5) * CELL_H;
-    const width = WIDTH_BUCKETS[Math.floor(r() * WIDTH_BUCKETS.length)];
-    placements[book.id] = { x, y, width, rotation: 0, seed: book.id };
-    order.push(book.id);
-  });
-
   const masthead = {
-    x: ((resA + resB + 1) / 2) * CELL_W, // center of the two reserved cells
-    y: (centerRow + 0.5) * CELL_H,
+    x: unitW / 2,
+    y: (Math.floor(rows / 2) + 0.5) * CELL_H,
   };
 
-  return { unitW, unitH, placements, order, masthead };
+  return { unitW, unitH, slots, masthead };
 }

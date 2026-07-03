@@ -106,27 +106,26 @@ export default function Canvas({ books, layout }: CanvasProps) {
   // Flat pool of tile instances (book × copy grid). Recycled, never grown.
   const tiles = useMemo<TileInstance[]>(() => {
     const out: TileInstance[] = [];
-    for (const id of layout.order) {
-      const entry = bookById.get(id);
-      const p = layout.placements[id];
-      if (!entry || !p) continue;
+    layout.slots.forEach((slot, si) => {
+      const entry = bookById.get(slot.bookId);
+      if (!entry) return;
       for (let cx = 0; cx < repeats.x; cx++) {
         for (let cy = 0; cy < repeats.y; cy++) {
           out.push({
-            key: `${id}-${cx}-${cy}`,
+            key: `${si}-${cx}-${cy}`,
             masthead: false,
             book: entry.book,
             index: entry.index,
-            bx: p.x,
-            by: p.y,
-            rotation: p.rotation,
-            width: p.width,
+            bx: slot.x,
+            by: slot.y,
+            rotation: slot.rotation,
+            width: slot.width,
             cx,
             cy,
           });
         }
       }
-    }
+    });
     // A single masthead — it pans with the canvas but never wraps/repeats.
     out.push({
       key: "mh",

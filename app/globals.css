@@ -19,7 +19,7 @@
   --paper-lo: #e7dfce;
   --ink: #26221b;
   --ink-soft: #6f6658;
-  --mat: #f4ecdd;
+  --mat: #fdfbf4;
   --pill-bg: #201d17;
   --pill-fg: #f2ede1;
 
@@ -514,6 +514,7 @@ body {
   z-index: 4;
 }
 .masthead-canvas {
+  position: relative;
   display: inline-block;
   transform: translate(-50%, -50%);
   white-space: nowrap;
@@ -525,6 +526,24 @@ body {
   color: var(--ink);
   pointer-events: none;
   user-select: none;
+}
+/* Paper clearing that pans with the masthead and covers the stamps behind it,
+   so the title sits in open paper with no hole left elsewhere in the field. */
+.masthead-canvas::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 480px;
+  height: 300px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    ellipse at center,
+    var(--paper) 66%,
+    rgba(242, 237, 225, 0) 87%
+  );
+  z-index: -1;
+  pointer-events: none;
 }
 
 /* ----------------------------------------------------- Loading screen */
