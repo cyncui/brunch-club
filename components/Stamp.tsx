@@ -14,7 +14,7 @@ type StampProps = {
 
 const PAD = 11;
 /** Perforation pitch — MUST match `--perf-pitch` in globals.css. */
-export const PERF_PITCH = 16;
+export const PERF_PITCH = 12;
 
 /** Snap a length to a whole number of perforations so notches land on edges. */
 export function snapToPerf(v: number): number {
@@ -61,6 +61,7 @@ export default function Stamp({
           <br />
           Read
         </div>
+        <div className="stamp-paper" aria-hidden="true" />
       </div>
     </div>
   );

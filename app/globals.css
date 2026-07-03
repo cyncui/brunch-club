@@ -23,6 +23,10 @@
   --pill-bg: #201d17;
   --pill-fg: #f2ede1;
 
+  /* Aged-paper / foxing overlay strength on each cover (0–1). Very subtle;
+     bump up for heavier staining, down toward 0 to remove it. */
+  --stamp-paper-opacity: 0.05;
+
   /* Rack-focus tuning (see PRD §6). */
   --focus-scale: 1.52;
   --focus-blur: 6px;
@@ -97,8 +101,8 @@ body {
      holes whose centers sit exactly on the edges (the stamp's outer width and
      height are snapped to whole pitch units in Stamp.tsx), so the teeth are
      even and symmetric on all four sides. */
-  --perf-pitch: 16px;
-  --perf-r: 6.5px;
+  --perf-pitch: 12px;
+  --perf-r: 4.6px;
   /* A transparent disc (the punched hole) surrounded by opaque paper. */
   --perf-hole: #0000 98%, #000;
   /* One row of holes centered on each edge; INTERSECT keeps only the paper
@@ -116,6 +120,8 @@ body {
   mask: var(--perf-mask);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
+  /* Round off the square corner tooth the edge-hole rows leave behind. */
+  border-radius: 5px;
   filter: drop-shadow(0 3px 5px rgba(60, 50, 30, 0.16))
     drop-shadow(0 1px 1px rgba(60, 50, 30, 0.12));
 }
@@ -163,6 +169,17 @@ body {
   background-size: cover, 90px 90px;
   mix-blend-mode: soft-light;
   opacity: 0.6;
+  pointer-events: none;
+}
+/* Aged-paper / foxing treatment over the print. Tune --stamp-paper-opacity. */
+.stamp-paper {
+  position: absolute;
+  inset: 0;
+  background: url("/textures/paper.svg");
+  background-size: 300px 300px;
+  background-repeat: repeat;
+  mix-blend-mode: multiply;
+  opacity: var(--stamp-paper-opacity);
   pointer-events: none;
 }
 
