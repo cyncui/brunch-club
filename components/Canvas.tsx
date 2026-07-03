@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 import type { Book } from "@/lib/types";
 import type { CanvasLayout } from "@/lib/layout";
 import Stamp from "./Stamp";
-import CanvasHero from "./CanvasHero";
 
 type CanvasProps = {
   books: Book[];
@@ -21,7 +20,9 @@ type CanvasProps = {
 
 type TileInstance = {
   key: string;
-  book: Book;
+  /** Masthead tiles carry no book. */
+  masthead: boolean;
+  book?: Book;
   index: number; // 1-based catalog number
   bx: number;
   by: number;
@@ -39,10 +40,6 @@ const PAD = 9;
 const FOCUS_SCALE = 1.52;
 // Vertical room the caption tag needs (tag height + gap + margin).
 const CAPTION_ROOM = 34;
-// Central masthead clearing: ellipse radii (px) and how far out stamps fade in.
-const CLEAR_RX = 350;
-const CLEAR_RY = 175;
-const CLEAR_FADE = 1.6;
 
 function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
@@ -109,6 +106,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
         for (let cy = 0; cy < repeats.y; cy++) {
           out.push({
             key: `${id}-${cx}-${cy}`,
+            masthead: false,
             book: entry.book,
             index: entry.index,
             bx: p.x,
@@ -119,6 +117,22 @@ export default function Canvas({ books, layout }: CanvasProps) {
             cy,
           });
         }
+      }
+    }
+    // Masthead copies — one per visible unit, wrapping with the stamps.
+    for (let cx = 0; cx < repeats.x; cx++) {
+      for (let cy = 0; cy < repeats.y; cy++) {
+        out.push({
+          key: `mh-${cx}-${cy}`,
+          masthead: true,
+          index: 0,
+          bx: layout.masthead.x,
+          by: layout.masthead.y,
+          rotation: 0,
+          width: 0,
+          cx,
+          cy,
+        });
       }
     }
     return out;
@@ -133,18 +147,22 @@ export default function Canvas({ books, layout }: CanvasProps) {
   const inertia = useRef(false);
   const rafId = useRef<number>(0);
 
+  // Center the masthead in the viewport on first mount.
+  const centeredRef = useRef(false);
+  useLayoutEffect(() => {
+    if (centeredRef.current) return;
+    centeredRef.current = true;
+    offset.current = {
+      x: window.innerWidth / 2 - layout.masthead.x,
+      y: window.innerHeight / 2 - layout.masthead.y,
+    };
+    dirty.current = true;
+  }, [layout.masthead.x, layout.masthead.y]);
+
   const writeTransforms = useCallback(() => {
     const { x: ox, y: oy } = offset.current;
     const uW = layout.unitW;
     const uH = layout.unitH;
-    // Central clearing so the masthead always sits in open space: stamps fade
-    // out as they enter the ellipse and back in as they pan away.
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const cx = vw / 2;
-    const cy = vh / 2;
-    const rx = Math.min(CLEAR_RX, vw * 0.4);
-    const ry = Math.min(CLEAR_RY, vh * 0.22);
     const fKey = focusedKeyRef.current;
     for (const t of tiles) {
       const el = tileEls.current.get(t.key);
@@ -152,19 +170,11 @@ export default function Canvas({ books, layout }: CanvasProps) {
       const wx = mod(t.bx + ox, uW) + (t.cx - 1) * uW;
       const wy = mod(t.by + oy, uH) + (t.cy - 1) * uH;
       el.style.transform = `translate3d(${wx}px, ${wy}px, 0)`;
-
-      if (fKey === t.key) {
-        // Hidden beneath the focus overlay, but keep it interactive so the
+      if (!t.masthead) {
+        // Focused stamp hides beneath the overlay but stays interactive so the
         // pointer stays "over" it and the hover doesn't drop.
-        el.style.opacity = "0";
-        el.style.pointerEvents = "auto";
-        continue;
+        el.style.opacity = fKey === t.key ? "0" : "1";
       }
-      const nd = Math.hypot((wx - cx) / rx, (wy - cy) / ry);
-      const op = nd <= 1 ? 0 : nd >= CLEAR_FADE ? 1 : (nd - 1) / (CLEAR_FADE - 1);
-      el.style.opacity = String(op);
-      // Faded-out stamps in the clearing shouldn't capture hover/clicks.
-      el.style.pointerEvents = op < 0.2 ? "none" : "auto";
     }
   }, [tiles, layout.unitW, layout.unitH]);
 
@@ -292,7 +302,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
 
   const onTileEnter = useCallback(
     (t: TileInstance, e: React.PointerEvent) => {
-      if (pointer.current.down || e.pointerType === "touch") return;
+      if (!t.book || pointer.current.down || e.pointerType === "touch") return;
       const rect = e.currentTarget.getBoundingClientRect();
       if (exitTimer.current) clearTimeout(exitTimer.current);
       focusedKeyRef.current = t.key;
@@ -304,7 +314,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
       const captionBelow = scaledTop < CAPTION_ROOM;
       // Anchor the overlay to the hovered tile's center (rotation-invariant).
       setFocus({
-        book: t.book,
+        book: t.book!,
         index: t.index,
         tileKey: t.key,
         width: t.width,
@@ -343,15 +353,19 @@ export default function Canvas({ books, layout }: CanvasProps) {
     >
       <div className="field">
         {tiles.map((t) => {
+          const setRef = (el: HTMLDivElement | null) => {
+            if (el) tileEls.current.set(t.key, el);
+            else tileEls.current.delete(t.key);
+          };
+          if (t.masthead) {
+            return (
+              <div key={t.key} ref={setRef} className="tile-pos masthead-pos">
+                <h1 className="masthead-canvas">Book Club Archive</h1>
+              </div>
+            );
+          }
           return (
-            <div
-              key={t.key}
-              ref={(el) => {
-                if (el) tileEls.current.set(t.key, el);
-                else tileEls.current.delete(t.key);
-              }}
-              className="tile-pos"
-            >
+            <div key={t.key} ref={setRef} className="tile-pos">
               <div
                 className="tile"
                 style={{
@@ -361,12 +375,12 @@ export default function Canvas({ books, layout }: CanvasProps) {
                 onPointerLeave={() => {
                   if (focus && focus.tileKey === t.key) clearFocus();
                 }}
-                onClick={() => openBook(t.book)}
+                onClick={() => t.book && openBook(t.book)}
               >
                 <Stamp
-                  book={t.book}
+                  book={t.book!}
                   width={t.width}
-                  aspect={aspects[t.book.id] ?? DEFAULT_ASPECT}
+                  aspect={aspects[t.book!.id] ?? DEFAULT_ASPECT}
                   index={t.index}
                   eager={t.cx === 1 && t.cy === 1}
                 />
@@ -374,7 +388,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
             </div>
           );
         })}
-        <CanvasHero />
       </div>
 
       {focus && (

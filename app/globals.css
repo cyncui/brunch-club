@@ -512,41 +512,24 @@ body {
   margin: 0 auto;
 }
 
-/* ------------------------------------------------- Canvas center hero */
+/* ---------------------------------------------- Canvas masthead */
 
-.hero {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
+/* Sits in the reserved gap and pans with the stamps (see Canvas.tsx). */
+.masthead-pos {
+  z-index: 4;
 }
-/* Soft paper clearing so the text stays legible over the stamps behind it. */
-.hero::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: min(620px, 84vw);
-  height: min(300px, 40vh);
+.masthead-canvas {
+  display: inline-block;
   transform: translate(-50%, -50%);
-  background: radial-gradient(
-    ellipse at center,
-    rgba(242, 237, 225, 0.85) 34%,
-    rgba(242, 237, 225, 0) 72%
-  );
-}
-.hero-title {
-  position: relative;
+  white-space: nowrap;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(30px, 4.4vw, 56px);
+  font-size: 46px;
   line-height: 1;
   margin: 0;
-  padding: 0 24px;
-  text-align: center;
   color: var(--ink);
+  pointer-events: none;
+  user-select: none;
 }
 
 /* ----------------------------------------------------- Loading screen */
