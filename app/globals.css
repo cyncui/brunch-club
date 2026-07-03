@@ -499,57 +499,59 @@ body {
   margin: 0 auto;
 }
 
-/* --------------------------------------------------------- Intro */
+/* ----------------------------------------------------- Loading screen */
 
-.intro {
+.loader-screen {
   position: fixed;
   inset: 0;
   z-index: 50;
   display: grid;
   place-items: center;
   background:
-    radial-gradient(120% 120% at 50% 45%, var(--paper-hi) 30%, var(--paper) 70%, var(--paper-lo) 100%);
-  transition: opacity 700ms var(--focus-ease), visibility 700ms;
-  pointer-events: none;
+    radial-gradient(120% 120% at 50% 45%, var(--paper-hi) 30%, var(--paper) 70%, var(--paper-lo) 100%),
+    url("/textures/grain.svg");
+  background-size: cover, 220px 220px;
+  transition: opacity 620ms var(--focus-ease), visibility 620ms;
 }
-.intro.gone {
+.loader-screen.gone {
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
 }
-.intro-inner {
-  text-align: center;
-  animation: intro-rise 900ms var(--focus-ease) both;
+.loader-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  animation: loader-rise 700ms var(--focus-ease) both;
 }
-.intro-eyebrow {
-  font-family: var(--font-sans);
-  font-size: 12px;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  margin-bottom: 18px;
+.loader-inner canvas {
+  opacity: 0.92;
 }
-.intro-title {
+.loader-text {
   font-family: var(--font-display);
-  font-weight: 400;
-  font-size: clamp(52px, 10vw, 108px);
-  letter-spacing: 0;
-  margin: 0;
-  color: var(--ink);
-}
-.intro-sub {
-  margin-top: 12px;
-  font-size: clamp(15px, 2.4vw, 20px);
+  font-size: 21px;
+  letter-spacing: 0.01em;
   color: var(--ink-soft);
-  font-style: italic;
+  animation: loader-pulse 2.4s ease-in-out infinite;
 }
-@keyframes intro-rise {
+@keyframes loader-rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+@keyframes loader-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
   }
 }
 
@@ -561,5 +563,9 @@ body {
   }
   .canvas-root.focusing .field {
     filter: brightness(0.9) !important;
+  }
+  .loader-text,
+  .loader-inner {
+    animation: none !important;
   }
 }
