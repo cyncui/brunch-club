@@ -3,14 +3,6 @@
 @theme {
   --font-sans: var(--font-runde), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-morello), var(--font-runde), ui-sans-serif, sans-serif;
-
-  --color-paper: #f2ede1;
-  --color-paper-hi: #f8f4ea;
-  --color-paper-lo: #e7dfce;
-  --color-ink: #26221b;
-  --color-ink-soft: #6f6658;
-  --color-mat: #fdfcf8;
-  --color-pill: #201d17;
 }
 
 :root {
@@ -281,24 +273,6 @@ body {
 .focus-overlay.on .caption {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
-}
-
-/* --------------------------------------------------------- Chrome */
-
-.chrome {
-  position: fixed;
-  z-index: 30;
-  font-family: var(--font-sans);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink);
-  mix-blend-mode: multiply;
-  pointer-events: none;
-}
-.chrome a,
-.chrome button {
-  pointer-events: auto;
 }
 
 /* --------------------------------------------------------- Drawer */
