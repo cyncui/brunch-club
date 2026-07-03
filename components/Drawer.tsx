@@ -19,6 +19,12 @@ export default function Drawer({ book }: { book: Book }) {
     return () => cancelAnimationFrame(id);
   }, []);
 
+  // Blur the canvas behind while the drawer is open (fades with the slide).
+  useEffect(() => {
+    document.documentElement.classList.toggle("drawer-open", open);
+    return () => document.documentElement.classList.remove("drawer-open");
+  }, [open]);
+
   const close = useCallback(() => {
     setOpen(false);
     // Let the slide-out play before unmounting via navigation.

@@ -73,6 +73,11 @@ body {
   user-select: none;
   -webkit-user-select: none;
   cursor: grab;
+  transition: filter 380ms var(--drawer-ease);
+}
+/* Blur the whole canvas while the reading drawer is open. */
+.drawer-open .canvas-root {
+  filter: blur(9px);
 }
 .canvas-root.dragging {
   cursor: grabbing;
@@ -306,9 +311,7 @@ body {
 .drawer-scrim {
   position: absolute;
   inset: 0;
-  background: rgba(40, 32, 16, 0.16);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: rgba(40, 32, 16, 0.14);
   opacity: 0;
   transition: opacity 380ms var(--drawer-ease);
 }
