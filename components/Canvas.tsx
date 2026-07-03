@@ -34,6 +34,10 @@ const DRAG_THRESHOLD = 5;
 const FRICTION = 0.94;
 const DEFAULT_ASPECT = 1.46;
 const PAD = 9;
+// Keep in sync with --focus-scale in globals.css.
+const FOCUS_SCALE = 1.52;
+// Vertical room the caption tag needs (tag height + gap + margin).
+const CAPTION_ROOM = 34;
 
 function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
@@ -236,6 +240,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
     rotation: number;
     px: number;
     py: number;
+    captionBelow: boolean;
   } | null>(null);
   const [focusOn, setFocusOn] = useState(false);
   const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -258,6 +263,11 @@ export default function Canvas({ books, layout }: CanvasProps) {
       if (pointer.current.down || e.pointerType === "touch") return;
       const rect = e.currentTarget.getBoundingClientRect();
       if (exitTimer.current) clearTimeout(exitTimer.current);
+      const py = rect.top + rect.height / 2;
+      // Top of the enlarged stamp; if the tag above it would clip off the top
+      // of the viewport, flip the tag below the stamp instead.
+      const scaledTop = py - (rect.height * FOCUS_SCALE) / 2;
+      const captionBelow = scaledTop < CAPTION_ROOM;
       // Anchor the overlay to the hovered tile's center (rotation-invariant).
       setFocus({
         book: t.book,
@@ -267,7 +277,8 @@ export default function Canvas({ books, layout }: CanvasProps) {
         aspect: aspects[t.book.id] ?? DEFAULT_ASPECT,
         rotation: t.rotation,
         px: rect.left + rect.width / 2,
-        py: rect.top + rect.height / 2,
+        py,
+        captionBelow,
       });
       requestAnimationFrame(() => setFocusOn(true));
     },
@@ -343,7 +354,9 @@ export default function Canvas({ books, layout }: CanvasProps) {
             }deg) scale(${focusOn ? "var(--focus-scale)" : 1})`,
           }}
         >
-          <div className="caption">{focus.book.title}</div>
+          <div className={`caption${focus.captionBelow ? " below" : ""}`}>
+            {focus.book.title}
+          </div>
           <Stamp
             book={focus.book}
             width={focus.width}

@@ -259,6 +259,12 @@ body {
     transform var(--focus-dur) var(--focus-ease);
   transform: translateX(-50%) translateY(6px);
 }
+/* Flip below the stamp when there isn't room above (top-row stamps). */
+.caption.below {
+  bottom: auto;
+  top: calc(100% + 8px);
+  transform: translateX(-50%) translateY(-6px);
+}
 .focus-overlay.on .caption {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
