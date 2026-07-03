@@ -6,13 +6,11 @@ type StampProps = {
   width: number;
   /** Cover aspect ratio (height / width) of the inner print. */
   aspect: number;
-  /** 1-based catalog number for the franking mark. */
-  index: number;
   /** Eager-load (used for the few unique preloaded covers). */
   eager?: boolean;
 };
 
-const PAD = 11;
+const PAD = 6;
 /** Perforation pitch — MUST match `--perf-pitch` in globals.css. */
 export const PERF_PITCH = 12;
 
@@ -23,23 +21,16 @@ export function snapToPerf(v: number): number {
 
 /**
  * A book cover rendered as a physical postage stamp: perforated die-cut edge,
- * white mat, paper-treated print, and a subtle franking / postmark overprint.
+ * a thin paper mat, paper-treated print, and a subtle postmark.
  *
  * Outer width AND height are snapped to whole perforation units so the edge
  * teeth are even and symmetric on all four sides.
  */
-export default function Stamp({
-  book,
-  width,
-  aspect,
-  index,
-  eager = false,
-}: StampProps) {
+export default function Stamp({ book, width, aspect, eager = false }: StampProps) {
   const outerW = snapToPerf(width);
   const innerW = outerW - PAD * 2;
   const outerH = snapToPerf(innerW * aspect + PAD * 2);
   const innerH = outerH - PAD * 2;
-  const num = String(index).padStart(2, "0");
 
   return (
     <div className="stamp" style={{ width: outerW, height: outerH }}>
@@ -52,10 +43,6 @@ export default function Stamp({
           draggable={false}
           loading={eager ? "eager" : "lazy"}
         />
-        <div className="stamp-frank">
-          <span>Book Club</span>
-          <span>N&ordm;{num}</span>
-        </div>
         <div className="stamp-postmark">
           2026
           <br />

@@ -81,19 +81,27 @@ export default function Canvas({ books, layout }: CanvasProps) {
 
   // How many copies of the base unit we need to blanket the viewport.
   const [repeats, setRepeats] = useState({ x: 3, y: 3 });
+  const centeredRef = useRef(false);
   useLayoutEffect(() => {
     const measure = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
+      if (!w || !h) return;
       setRepeats({
         x: Math.ceil(w / layout.unitW) + 2,
         y: Math.ceil(h / layout.unitH) + 2,
       });
+      // Center the masthead once we actually know the viewport size.
+      if (!centeredRef.current) {
+        centeredRef.current = true;
+        offset.current = { x: w / 2 - layout.masthead.x, y: h / 2 - layout.masthead.y };
+        dirty.current = true;
+      }
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [layout.unitW, layout.unitH]);
+  }, [layout.unitW, layout.unitH, layout.masthead.x, layout.masthead.y]);
 
   // Flat pool of tile instances (book × copy grid). Recycled, never grown.
   const tiles = useMemo<TileInstance[]>(() => {
@@ -119,22 +127,18 @@ export default function Canvas({ books, layout }: CanvasProps) {
         }
       }
     }
-    // Masthead copies — one per visible unit, wrapping with the stamps.
-    for (let cx = 0; cx < repeats.x; cx++) {
-      for (let cy = 0; cy < repeats.y; cy++) {
-        out.push({
-          key: `mh-${cx}-${cy}`,
-          masthead: true,
-          index: 0,
-          bx: layout.masthead.x,
-          by: layout.masthead.y,
-          rotation: 0,
-          width: 0,
-          cx,
-          cy,
-        });
-      }
-    }
+    // A single masthead — it pans with the canvas but never wraps/repeats.
+    out.push({
+      key: "mh",
+      masthead: true,
+      index: 0,
+      bx: layout.masthead.x,
+      by: layout.masthead.y,
+      rotation: 0,
+      width: 0,
+      cx: 0,
+      cy: 0,
+    });
     return out;
   }, [layout, bookById, repeats]);
 
@@ -147,18 +151,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
   const inertia = useRef(false);
   const rafId = useRef<number>(0);
 
-  // Center the masthead in the viewport on first mount.
-  const centeredRef = useRef(false);
-  useLayoutEffect(() => {
-    if (centeredRef.current) return;
-    centeredRef.current = true;
-    offset.current = {
-      x: window.innerWidth / 2 - layout.masthead.x,
-      y: window.innerHeight / 2 - layout.masthead.y,
-    };
-    dirty.current = true;
-  }, [layout.masthead.x, layout.masthead.y]);
-
   const writeTransforms = useCallback(() => {
     const { x: ox, y: oy } = offset.current;
     const uW = layout.unitW;
@@ -167,14 +159,17 @@ export default function Canvas({ books, layout }: CanvasProps) {
     for (const t of tiles) {
       const el = tileEls.current.get(t.key);
       if (!el) continue;
+      if (t.masthead) {
+        // Single instance: pans with the offset, never wraps.
+        el.style.transform = `translate3d(${t.bx + ox}px, ${t.by + oy}px, 0)`;
+        continue;
+      }
       const wx = mod(t.bx + ox, uW) + (t.cx - 1) * uW;
       const wy = mod(t.by + oy, uH) + (t.cy - 1) * uH;
       el.style.transform = `translate3d(${wx}px, ${wy}px, 0)`;
-      if (!t.masthead) {
-        // Focused stamp hides beneath the overlay but stays interactive so the
-        // pointer stays "over" it and the hover doesn't drop.
-        el.style.opacity = fKey === t.key ? "0" : "1";
-      }
+      // Focused stamp hides beneath the overlay but stays interactive so the
+      // pointer stays "over" it and the hover doesn't drop.
+      el.style.opacity = fKey === t.key ? "0" : "1";
     }
   }, [tiles, layout.unitW, layout.unitH]);
 
@@ -381,7 +376,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
                   book={t.book!}
                   width={t.width}
                   aspect={aspects[t.book!.id] ?? DEFAULT_ASPECT}
-                  index={t.index}
                   eager={t.cx === 1 && t.cy === 1}
                 />
               </div>
@@ -408,7 +402,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
             book={focus.book}
             width={focus.width}
             aspect={focus.aspect}
-            index={focus.index}
           />
         </div>
       )}

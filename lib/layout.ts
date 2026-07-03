@@ -40,10 +40,10 @@ function rng(seed: number): () => number {
 }
 
 const COLS = 4;
-const CELL_W = 272;
-const CELL_H = 356;
+const CELL_W = 180;
+const CELL_H = 246;
 // Discrete stamp widths for gentle masonry variation.
-const WIDTH_BUCKETS = [160, 184, 208];
+const WIDTH_BUCKETS = [116, 132, 150];
 
 /**
  * Lay the books out in an upright grid that reserves a two-cell gap at the
