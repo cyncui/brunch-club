@@ -1,17 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Funnel_Sans, Space_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const funnelSans = Funnel_Sans({
-  subsets: ["latin"],
-  variable: "--font-funnel-sans",
+// Morello Marker — display / headers.
+const morello = localFont({
+  src: "./fonts/morellomarker-Regular.ttf",
+  variable: "--font-morello",
   display: "swap",
 });
 
-const spaceMono = Space_Mono({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-space-mono",
+// Open Runde — body / everything else.
+const openRunde = localFont({
+  src: "./fonts/OpenRunde-Regular.otf",
+  variable: "--font-runde",
   display: "swap",
 });
 
@@ -42,7 +43,7 @@ export default function RootLayout({
   drawer: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${funnelSans.variable} ${spaceMono.variable}`}>
+    <html lang="en" className={`${morello.variable} ${openRunde.variable}`}>
       <body>
         {children}
         {drawer}

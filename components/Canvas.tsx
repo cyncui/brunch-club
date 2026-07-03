@@ -343,10 +343,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
             }deg) scale(${focusOn ? "var(--focus-scale)" : 1})`,
           }}
         >
-          <div className="caption">
-            {focus.book.title}
-            {focus.book.author ? ` · ${focus.book.author}` : ""}
-          </div>
+          <div className="caption">{focus.book.title}</div>
           <Stamp
             book={focus.book}
             width={focus.width}

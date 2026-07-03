@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-funnel-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, monospace;
+  --font-sans: var(--font-runde), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-morello), var(--font-runde), ui-sans-serif, sans-serif;
 
   --color-paper: #f2ede1;
   --color-paper-hi: #f8f4ea;
@@ -167,7 +167,7 @@ body {
   right: 6px;
   display: flex;
   justify-content: space-between;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 7px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -185,7 +185,7 @@ body {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 5.5px;
   line-height: 1.15;
   letter-spacing: 0.04em;
@@ -233,18 +233,19 @@ body {
 .caption {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 14px);
+  bottom: calc(100% + 8px);
   transform: translateX(-50%);
   white-space: nowrap;
   background: var(--pill-bg);
   color: var(--pill-fg);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-family: var(--font-sans);
+  font-size: 7.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 7px 14px;
+  padding: 3px 7px;
   border-radius: 999px;
-  box-shadow: 0 6px 18px rgba(40, 30, 15, 0.22);
+  box-shadow: 0 3px 9px rgba(40, 30, 15, 0.2);
   opacity: 0;
   transition:
     opacity var(--focus-dur) var(--focus-ease),
@@ -261,7 +262,7 @@ body {
 .chrome {
   position: fixed;
   z-index: 30;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -380,12 +381,12 @@ body {
   margin-bottom: 26px;
 }
 .detail-title {
-  font-family: var(--font-mono);
-  font-size: 24px;
-  line-height: 1.2;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 32px;
+  line-height: 1.08;
+  font-weight: 400;
+  letter-spacing: 0;
+  margin: 0 0 8px;
   text-wrap: balance;
 }
 .detail-author {
@@ -398,7 +399,7 @@ body {
   margin-bottom: 24px;
 }
 .detail-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -420,7 +421,7 @@ body {
   margin-top: 30px;
   padding-top: 16px;
   border-top: 1px solid rgba(60, 48, 24, 0.14);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   letter-spacing: 0.04em;
   color: var(--ink-soft);
@@ -470,7 +471,7 @@ body {
   margin: 0 auto 24px;
   max-width: 560px;
   width: 100%;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -507,7 +508,7 @@ body {
   animation: intro-rise 900ms var(--focus-ease) both;
 }
 .intro-eyebrow {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 12px;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -515,10 +516,10 @@ body {
   margin-bottom: 18px;
 }
 .intro-title {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: clamp(44px, 9vw, 96px);
-  letter-spacing: -0.01em;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(52px, 10vw, 108px);
+  letter-spacing: 0;
   margin: 0;
   color: var(--ink);
 }

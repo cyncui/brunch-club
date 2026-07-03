@@ -12,7 +12,7 @@ export default async function Home() {
   return (
     <>
       <Canvas books={books} layout={layout} />
-      <Chrome count={books.length} />
+      <Chrome />
     </>
   );
 }
