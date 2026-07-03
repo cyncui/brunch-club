@@ -225,7 +225,9 @@ export default function Canvas({ books, layout }: CanvasProps) {
     p.baseY = offset.current.y;
     inertia.current = false;
     velocity.current = { x: 0, y: 0 };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    // NB: don't capture the pointer here — capturing on press retargets the
+    // subsequent click to the canvas root, so a stamp's onClick never fires.
+    // We capture only once a drag actually starts (below).
   }, []);
 
   const clearFocusRef = useRef<() => void>(() => {});
@@ -240,6 +242,12 @@ export default function Canvas({ books, layout }: CanvasProps) {
       userPannedRef.current = true; // stop auto-centering once the user pans
       setDragging(true);
       clearFocusRef.current();
+      // Capture now (a real drag) so the pan keeps tracking off-target.
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {
+        /* pointer may already be gone */
+      }
     }
     if (p.moved) {
       offset.current.x = p.baseX + dx;
