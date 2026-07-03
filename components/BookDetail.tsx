@@ -3,15 +3,11 @@ import remarkGfm from "remark-gfm";
 import type { Book } from "@/lib/types";
 
 function formatDate(iso: string): string {
-  try {
-    return new Date(iso).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  } catch {
-    return "";
-  }
+  return new Date(iso).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 export default function BookDetail({ book }: { book: Book }) {

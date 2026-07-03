@@ -23,7 +23,6 @@ type TileInstance = {
   /** Masthead tiles carry no book. */
   masthead: boolean;
   book?: Book;
-  index: number; // 1-based catalog number
   bx: number;
   by: number;
   rotation: number;
@@ -35,7 +34,6 @@ type TileInstance = {
 const DRAG_THRESHOLD = 5;
 const FRICTION = 0.94;
 const DEFAULT_ASPECT = 1.46;
-const PAD = 9;
 // Keep in sync with --focus-scale in globals.css.
 const FOCUS_SCALE = 1.52;
 // Vertical room the caption tag needs (tag height + gap + margin).
@@ -50,8 +48,8 @@ export default function Canvas({ books, layout }: CanvasProps) {
   const rootRef = useRef<HTMLDivElement>(null);
 
   const bookById = useMemo(() => {
-    const m = new Map<number, { book: Book; index: number }>();
-    books.forEach((b, i) => m.set(b.id, { book: b, index: i + 1 }));
+    const m = new Map<number, Book>();
+    books.forEach((b) => m.set(b.id, b));
     return m;
   }, [books]);
 
@@ -106,15 +104,14 @@ export default function Canvas({ books, layout }: CanvasProps) {
   const tiles = useMemo<TileInstance[]>(() => {
     const out: TileInstance[] = [];
     layout.slots.forEach((slot, si) => {
-      const entry = bookById.get(slot.bookId);
-      if (!entry) return;
+      const book = bookById.get(slot.bookId);
+      if (!book) return;
       for (let cx = 0; cx < repeats.x; cx++) {
         for (let cy = 0; cy < repeats.y; cy++) {
           out.push({
             key: `${si}-${cx}-${cy}`,
             masthead: false,
-            book: entry.book,
-            index: entry.index,
+            book,
             bx: slot.x,
             by: slot.y,
             rotation: slot.rotation,
@@ -129,7 +126,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
     out.push({
       key: "mh",
       masthead: true,
-      index: 0,
       bx: layout.masthead.x,
       by: layout.masthead.y,
       rotation: 0,
@@ -273,7 +269,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
   // ---- Rack-focus hover state ----
   const [focus, setFocus] = useState<{
     book: Book;
-    index: number;
     tileKey: string;
     width: number;
     aspect: number;
@@ -288,7 +283,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
   const clearFocus = useCallback(() => {
     setFocusOn(false);
     focusedKeyRef.current = null;
-    dirty.current = true; // restore the un-hidden stamp's clearing opacity
+    dirty.current = true; // restore the just-unhidden stamp's opacity
     if (exitTimer.current) clearTimeout(exitTimer.current);
     exitTimer.current = setTimeout(() => setFocus(null), 280);
   }, []);
@@ -316,8 +311,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
       const captionBelow = scaledTop < CAPTION_ROOM;
       // Anchor the overlay to the hovered tile's center (rotation-invariant).
       setFocus({
-        book: t.book!,
-        index: t.index,
+        book: t.book,
         tileKey: t.key,
         width: t.width,
         aspect: aspects[t.book.id] ?? DEFAULT_ASPECT,
