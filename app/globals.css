@@ -198,19 +198,19 @@ body {
   pointer-events: none;
 }
 
-/* Cancellation postmark. */
+/* Cancellation postmark — sized off the perforation pitch so it scales. */
 .stamp-postmark {
   position: absolute;
-  bottom: 5px;
-  right: 5px;
-  width: 24px;
-  height: 24px;
+  bottom: calc(var(--perf-pitch) * 0.42);
+  right: calc(var(--perf-pitch) * 0.42);
+  width: calc(var(--perf-pitch) * 2);
+  height: calc(var(--perf-pitch) * 2);
   border: 1px solid rgba(30, 22, 12, 0.3);
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-family: var(--font-sans);
-  font-size: 4.5px;
+  font-size: calc(var(--perf-pitch) * 0.37);
   line-height: 1.15;
   letter-spacing: 0.04em;
   text-transform: uppercase;

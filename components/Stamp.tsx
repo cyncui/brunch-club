@@ -1,8 +1,9 @@
+import type { CSSProperties } from "react";
 import type { Book } from "@/lib/types";
 
 type StampProps = {
   book: Book;
-  /** Target outer frame width in px (snapped to the perforation pitch). */
+  /** Outer frame width in px. */
   width: number;
   /** Cover aspect ratio (height / width) of the inner print. */
   aspect: number;
@@ -10,30 +11,37 @@ type StampProps = {
   eager?: boolean;
 };
 
-const PAD = 11;
-/** Perforation pitch — MUST match `--perf-pitch` in globals.css. */
-export const PERF_PITCH = 12;
-
-/** Snap a length to a whole number of perforations so notches land on edges. */
-export function snapToPerf(v: number): number {
-  return Math.max(PERF_PITCH * 2, Math.round(v / PERF_PITCH) * PERF_PITCH);
-}
+// Fixed number of perforations across the width; the mat and hole size are a
+// proportion of the width, so a stamp looks identical at any scale.
+const TEETH_X = 13;
+const PAD_RATIO = 0.072;
+const HOLE_RATIO = 0.38; // perforation radius as a fraction of the pitch
 
 /**
  * A book cover rendered as a physical postage stamp: perforated die-cut edge,
  * a thin paper mat, paper-treated print, and a subtle postmark.
  *
- * Outer width AND height are snapped to whole perforation units so the edge
- * teeth are even and symmetric on all four sides.
+ * The pitch is derived from the width so a whole number of teeth always fits,
+ * and the outer height is snapped to that pitch — even teeth on all four sides.
  */
 export default function Stamp({ book, width, aspect, eager = false }: StampProps) {
-  const outerW = snapToPerf(width);
-  const innerW = outerW - PAD * 2;
-  const outerH = snapToPerf(innerW * aspect + PAD * 2);
-  const innerH = outerH - PAD * 2;
+  const pitch = width / TEETH_X;
+  const pad = Math.max(3, Math.round(width * PAD_RATIO));
+  const innerW = width - pad * 2;
+  const teethY = Math.max(3, Math.round((innerW * aspect + pad * 2) / pitch));
+  const outerH = teethY * pitch;
+  const innerH = outerH - pad * 2;
+
+  const style = {
+    width,
+    height: outerH,
+    padding: pad,
+    "--perf-pitch": `${pitch}px`,
+    "--perf-r": `${pitch * HOLE_RATIO}px`,
+  } as CSSProperties;
 
   return (
-    <div className="stamp" style={{ width: outerW, height: outerH }}>
+    <div className="stamp" style={style}>
       <div className="stamp-inner" style={{ height: innerH }}>
         <img
           className="stamp-img"

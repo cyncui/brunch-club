@@ -77,33 +77,55 @@ export default function Canvas({ books, layout }: CanvasProps) {
     };
   }, [books]);
 
-  // How many copies of the base unit we need to blanket the viewport.
-  const [repeats, setRepeats] = useState({ x: 3, y: 3 });
+  // Track the viewport so the layout can scale down on smaller screens.
+  const [viewport, setViewport] = useState({ w: 0, h: 0 });
   const userPannedRef = useRef(false);
   useLayoutEffect(() => {
     const measure = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      if (!w || !h) return;
-      setRepeats({
-        x: Math.ceil(w / layout.unitW) + 2,
-        y: Math.ceil(h / layout.unitH) + 2,
-      });
-      // Keep the masthead centered through (re)size until the user first pans.
-      if (!userPannedRef.current) {
-        offset.current = { x: w / 2 - layout.masthead.x, y: h / 2 - layout.masthead.y };
-        dirty.current = true;
-      }
+      if (w && h) setViewport({ w, h });
     };
     measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
-  }, [layout.unitW, layout.unitH, layout.masthead.x, layout.masthead.y]);
+  }, []);
+
+  // Smaller screens get a smaller layout so more stamps fit; the stamp itself
+  // is size-proportional, so its mat and perforation scale with it.
+  const scale = useMemo(() => {
+    if (!viewport.w) return 1;
+    return Math.min(1, Math.max(0.56, viewport.w / 780));
+  }, [viewport.w]);
+
+  const slayout = useMemo(
+    () => ({
+      unitW: layout.unitW * scale,
+      unitH: layout.unitH * scale,
+      slots: layout.slots.map((s) => ({
+        ...s,
+        x: s.x * scale,
+        y: s.y * scale,
+        width: s.width * scale,
+      })),
+      masthead: { x: layout.masthead.x * scale, y: layout.masthead.y * scale },
+    }),
+    [layout, scale],
+  );
+
+  // How many copies of the base unit we need to blanket the viewport.
+  const repeats = useMemo(
+    () => ({
+      x: viewport.w ? Math.ceil(viewport.w / slayout.unitW) + 2 : 3,
+      y: viewport.h ? Math.ceil(viewport.h / slayout.unitH) + 2 : 3,
+    }),
+    [viewport, slayout.unitW, slayout.unitH],
+  );
 
   // Flat pool of tile instances (book × copy grid). Recycled, never grown.
   const tiles = useMemo<TileInstance[]>(() => {
     const out: TileInstance[] = [];
-    layout.slots.forEach((slot, si) => {
+    slayout.slots.forEach((slot, si) => {
       const book = bookById.get(slot.bookId);
       if (!book) return;
       for (let cx = 0; cx < repeats.x; cx++) {
@@ -126,15 +148,15 @@ export default function Canvas({ books, layout }: CanvasProps) {
     out.push({
       key: "mh",
       masthead: true,
-      bx: layout.masthead.x,
-      by: layout.masthead.y,
+      bx: slayout.masthead.x,
+      by: slayout.masthead.y,
       rotation: 0,
       width: 0,
       cx: 0,
       cy: 0,
     });
     return out;
-  }, [layout, bookById, repeats]);
+  }, [slayout, bookById, repeats]);
 
   // ---- Pan engine (imperative; transforms written straight to the DOM) ----
   const tileEls = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -145,10 +167,20 @@ export default function Canvas({ books, layout }: CanvasProps) {
   const inertia = useRef(false);
   const rafId = useRef<number>(0);
 
+  // Keep the masthead centered through (re)size/scale until the user first pans.
+  useLayoutEffect(() => {
+    if (userPannedRef.current || !viewport.w) return;
+    offset.current = {
+      x: viewport.w / 2 - slayout.masthead.x,
+      y: viewport.h / 2 - slayout.masthead.y,
+    };
+    dirty.current = true;
+  }, [viewport.w, viewport.h, slayout.masthead.x, slayout.masthead.y]);
+
   const writeTransforms = useCallback(() => {
     const { x: ox, y: oy } = offset.current;
-    const uW = layout.unitW;
-    const uH = layout.unitH;
+    const uW = slayout.unitW;
+    const uH = slayout.unitH;
     const fKey = focusedKeyRef.current;
     for (const t of tiles) {
       const el = tileEls.current.get(t.key);
@@ -165,7 +197,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
       // pointer stays "over" it and the hover doesn't drop.
       el.style.opacity = fKey === t.key ? "0" : "1";
     }
-  }, [tiles, layout.unitW, layout.unitH]);
+  }, [tiles, slayout.unitW, slayout.unitH]);
 
   useEffect(() => {
     const loop = () => {
