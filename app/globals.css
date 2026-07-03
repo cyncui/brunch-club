@@ -322,12 +322,13 @@ body {
   right: 0;
   height: 100%;
   width: min(420px, 100vw);
-  background:
-    linear-gradient(180deg, var(--paper-hi), var(--paper));
+  /* Fully opaque: solid base + opaque gradient, grain on top. */
+  background-color: var(--paper-hi);
   background-image:
-    linear-gradient(180deg, rgba(255, 252, 244, 0.6), rgba(242, 237, 225, 0.6)),
-    url("/textures/grain.svg");
-  background-size: cover, 200px 200px;
+    url("/textures/grain.svg"),
+    linear-gradient(180deg, var(--paper-hi), var(--paper));
+  background-size: 200px 200px, cover;
+  background-repeat: repeat, no-repeat;
   border-left: 1px solid rgba(60, 48, 24, 0.14);
   box-shadow: -14px 0 46px rgba(50, 38, 18, 0.16);
   transform: translateX(100%);
