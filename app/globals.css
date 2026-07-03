@@ -543,7 +543,10 @@ body {
     rgba(242, 237, 225, 0) 84%
   );
   z-index: -1;
-  pointer-events: none;
+  /* Capture pointer over the masthead so the stamp hidden behind it can't be
+     hovered/clicked; drags still bubble to the canvas to pan. */
+  pointer-events: auto;
+  cursor: grab;
   transition: opacity var(--focus-dur) var(--focus-ease);
 }
 /* On rack-focus the whole field blurs anyway, so the opaque clearing isn't
