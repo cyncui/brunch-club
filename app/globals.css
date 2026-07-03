@@ -350,11 +350,11 @@ body {
 }
 .drawer-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 14px;
+  right: 14px;
   z-index: 2;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   border: none;
@@ -362,10 +362,15 @@ body {
   background: rgba(38, 34, 27, 0.06);
   color: var(--ink);
   cursor: pointer;
-  transition: background 160ms ease;
+  transition:
+    background 160ms ease,
+    transform 120ms var(--focus-ease);
 }
 .drawer-close:hover {
   background: rgba(38, 34, 27, 0.12);
+}
+.drawer-close:active {
+  transform: scale(0.96);
 }
 /* Grabber handle — only shown on the mobile bottom sheet. */
 .drawer-grab {
@@ -424,6 +429,9 @@ body {
   max-width: 62%;
   height: auto;
   border-radius: 2px;
+  /* Subtle pure-black outline so the cover has a crisp edge on any surface. */
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+  outline-offset: -1px;
   box-shadow:
     0 1px 1px rgba(40, 30, 15, 0.14),
     0 10px 26px rgba(40, 30, 15, 0.2);
@@ -477,6 +485,7 @@ body {
   font-size: 11px;
   letter-spacing: 0.04em;
   color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
 }
 .detail-foot a {
   color: inherit;
@@ -503,6 +512,36 @@ body {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
+}
+
+/* Stagger the drawer content in as the panel arrives. */
+@keyframes detail-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.detail > * {
+  animation: detail-rise 460ms var(--focus-ease) both;
+}
+.detail > *:nth-child(1) {
+  animation-delay: 90ms;
+}
+.detail > *:nth-child(2) {
+  animation-delay: 150ms;
+}
+.detail > *:nth-child(3) {
+  animation-delay: 210ms;
+}
+.detail > *:nth-child(4) {
+  animation-delay: 270ms;
+}
+.detail > *:nth-child(5) {
+  animation-delay: 330ms;
 }
 
 /* ------------------------------------------------- Book full page */
@@ -646,7 +685,8 @@ body {
     filter: brightness(0.9) !important;
   }
   .loader-text,
-  .loader-inner {
+  .loader-inner,
+  .detail > * {
     animation: none !important;
   }
 }
