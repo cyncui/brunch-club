@@ -234,10 +234,6 @@ body {
 .tile {
   display: inline-block;
   cursor: pointer;
-  transition: opacity 120ms linear;
-}
-.tile.hidden-focus {
-  opacity: 0;
 }
 
 /* ---------------------------------------------------- Focus overlay */
@@ -532,43 +528,25 @@ body {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: min(760px, 88vw);
-  height: min(440px, 58vh);
+  width: min(620px, 84vw);
+  height: min(300px, 40vh);
   transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse at center,
-    rgba(242, 237, 225, 0.96) 30%,
-    rgba(242, 237, 225, 0.72) 50%,
-    rgba(242, 237, 225, 0) 74%
+    rgba(242, 237, 225, 0.85) 34%,
+    rgba(242, 237, 225, 0) 72%
   );
 }
-.hero-inner {
-  position: relative;
-  text-align: center;
-  padding: 0 24px;
-}
-.hero-eyebrow {
-  font-family: var(--font-sans);
-  font-size: 12px;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  margin-bottom: 16px;
-}
 .hero-title {
+  position: relative;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: clamp(46px, 7.5vw, 96px);
+  font-size: clamp(30px, 4.4vw, 56px);
   line-height: 1;
   margin: 0;
+  padding: 0 24px;
+  text-align: center;
   color: var(--ink);
-}
-.hero-sub {
-  margin-top: 12px;
-  font-family: var(--font-sans);
-  font-size: clamp(14px, 2vw, 19px);
-  font-style: italic;
-  color: var(--ink-soft);
 }
 
 /* ----------------------------------------------------- Loading screen */

@@ -39,6 +39,10 @@ const PAD = 9;
 const FOCUS_SCALE = 1.52;
 // Vertical room the caption tag needs (tag height + gap + margin).
 const CAPTION_ROOM = 34;
+// Central masthead clearing: ellipse radii (px) and how far out stamps fade in.
+const CLEAR_RX = 350;
+const CLEAR_RY = 175;
+const CLEAR_FADE = 1.6;
 
 function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
@@ -122,6 +126,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
 
   // ---- Pan engine (imperative; transforms written straight to the DOM) ----
   const tileEls = useRef<Map<string, HTMLDivElement>>(new Map());
+  const focusedKeyRef = useRef<string | null>(null);
   const offset = useRef({ x: 0, y: 0 });
   const velocity = useRef({ x: 0, y: 0 });
   const dirty = useRef(true);
@@ -132,12 +137,34 @@ export default function Canvas({ books, layout }: CanvasProps) {
     const { x: ox, y: oy } = offset.current;
     const uW = layout.unitW;
     const uH = layout.unitH;
+    // Central clearing so the masthead always sits in open space: stamps fade
+    // out as they enter the ellipse and back in as they pan away.
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const cx = vw / 2;
+    const cy = vh / 2;
+    const rx = Math.min(CLEAR_RX, vw * 0.4);
+    const ry = Math.min(CLEAR_RY, vh * 0.22);
+    const fKey = focusedKeyRef.current;
     for (const t of tiles) {
       const el = tileEls.current.get(t.key);
       if (!el) continue;
       const wx = mod(t.bx + ox, uW) + (t.cx - 1) * uW;
       const wy = mod(t.by + oy, uH) + (t.cy - 1) * uH;
       el.style.transform = `translate3d(${wx}px, ${wy}px, 0)`;
+
+      if (fKey === t.key) {
+        // Hidden beneath the focus overlay, but keep it interactive so the
+        // pointer stays "over" it and the hover doesn't drop.
+        el.style.opacity = "0";
+        el.style.pointerEvents = "auto";
+        continue;
+      }
+      const nd = Math.hypot((wx - cx) / rx, (wy - cy) / ry);
+      const op = nd <= 1 ? 0 : nd >= CLEAR_FADE ? 1 : (nd - 1) / (CLEAR_FADE - 1);
+      el.style.opacity = String(op);
+      // Faded-out stamps in the clearing shouldn't capture hover/clicks.
+      el.style.pointerEvents = op < 0.2 ? "none" : "auto";
     }
   }, [tiles, layout.unitW, layout.unitH]);
 
@@ -248,6 +275,8 @@ export default function Canvas({ books, layout }: CanvasProps) {
 
   const clearFocus = useCallback(() => {
     setFocusOn(false);
+    focusedKeyRef.current = null;
+    dirty.current = true; // restore the un-hidden stamp's clearing opacity
     if (exitTimer.current) clearTimeout(exitTimer.current);
     exitTimer.current = setTimeout(() => setFocus(null), 280);
   }, []);
@@ -255,6 +284,8 @@ export default function Canvas({ books, layout }: CanvasProps) {
   const clearFocusInstant = useCallback(() => {
     if (exitTimer.current) clearTimeout(exitTimer.current);
     setFocusOn(false);
+    focusedKeyRef.current = null;
+    dirty.current = true;
     setFocus(null);
   }, []);
   clearFocusRef.current = clearFocusInstant;
@@ -264,6 +295,8 @@ export default function Canvas({ books, layout }: CanvasProps) {
       if (pointer.current.down || e.pointerType === "touch") return;
       const rect = e.currentTarget.getBoundingClientRect();
       if (exitTimer.current) clearTimeout(exitTimer.current);
+      focusedKeyRef.current = t.key;
+      dirty.current = true; // hide the hovered stamp beneath the overlay
       const py = rect.top + rect.height / 2;
       // Top of the enlarged stamp; if the tag above it would clip off the top
       // of the viewport, flip the tag below the stamp instead.
@@ -310,7 +343,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
     >
       <div className="field">
         {tiles.map((t) => {
-          const hidden = focus && focus.tileKey === t.key; // hide focused copy
           return (
             <div
               key={t.key}
@@ -321,7 +353,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
               className="tile-pos"
             >
               <div
-                className={`tile${hidden ? " hidden-focus" : ""}`}
+                className="tile"
                 style={{
                   transform: `translate(-50%, -50%) rotate(${t.rotation}deg)`,
                 }}
