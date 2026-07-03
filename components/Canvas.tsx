@@ -81,7 +81,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
 
   // How many copies of the base unit we need to blanket the viewport.
   const [repeats, setRepeats] = useState({ x: 3, y: 3 });
-  const centeredRef = useRef(false);
+  const userPannedRef = useRef(false);
   useLayoutEffect(() => {
     const measure = () => {
       const w = window.innerWidth;
@@ -91,9 +91,8 @@ export default function Canvas({ books, layout }: CanvasProps) {
         x: Math.ceil(w / layout.unitW) + 2,
         y: Math.ceil(h / layout.unitH) + 2,
       });
-      // Center the masthead once we actually know the viewport size.
-      if (!centeredRef.current) {
-        centeredRef.current = true;
+      // Keep the masthead centered through (re)size until the user first pans.
+      if (!userPannedRef.current) {
         offset.current = { x: w / 2 - layout.masthead.x, y: h / 2 - layout.masthead.y };
         dirty.current = true;
       }
@@ -238,6 +237,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
     const dy = e.clientY - p.startY;
     if (!p.moved && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
       p.moved = true;
+      userPannedRef.current = true; // stop auto-centering once the user pans
       setDragging(true);
       clearFocusRef.current();
     }
@@ -347,17 +347,11 @@ export default function Canvas({ books, layout }: CanvasProps) {
     >
       <div className="field">
         {tiles.map((t) => {
+          if (t.masthead) return null;
           const setRef = (el: HTMLDivElement | null) => {
             if (el) tileEls.current.set(t.key, el);
             else tileEls.current.delete(t.key);
           };
-          if (t.masthead) {
-            return (
-              <div key={t.key} ref={setRef} className="tile-pos masthead-pos">
-                <h1 className="masthead-canvas">Book Club Archive</h1>
-              </div>
-            );
-          }
           return (
             <div key={t.key} ref={setRef} className="tile-pos">
               <div
@@ -382,6 +376,24 @@ export default function Canvas({ books, layout }: CanvasProps) {
           );
         })}
       </div>
+
+      {/* Masthead lives OUTSIDE .field so the rack-focus blur/dim never touches
+          it — its clearing stays bright paper and cleanly covers the stamp
+          behind it on hover. */}
+      {tiles
+        .filter((t) => t.masthead)
+        .map((t) => (
+          <div
+            key={t.key}
+            ref={(el) => {
+              if (el) tileEls.current.set(t.key, el);
+              else tileEls.current.delete(t.key);
+            }}
+            className="tile-pos masthead-pos"
+          >
+            <h1 className="masthead-canvas">Book Club Archive</h1>
+          </div>
+        ))}
 
       {focus && (
         <div

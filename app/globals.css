@@ -547,12 +547,6 @@ body {
      hovered/clicked; drags still bubble to the canvas to pan. */
   pointer-events: auto;
   cursor: grab;
-  transition: opacity var(--focus-dur) var(--focus-ease);
-}
-/* On rack-focus the whole field blurs anyway, so the opaque clearing isn't
-   needed — hide it, otherwise it dims to a grey blob against the bright bg. */
-.canvas-root.focusing .masthead-canvas::before {
-  opacity: 0;
 }
 
 /* ----------------------------------------------------- Loading screen */
