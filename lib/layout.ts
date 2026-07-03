@@ -8,7 +8,7 @@ export type Placement = {
   y: number;
   /** Stamp frame width (px). Height follows the cover's real aspect ratio. */
   width: number;
-  /** Resting rotation (deg). */
+  /** Resting rotation (deg). Always 0 — an upright grid. */
   rotation: number;
   /** Stable per-book seed, reused for texture/franking variation. */
   seed: number;
@@ -38,15 +38,18 @@ function rng(seed: number): () => number {
 }
 
 const COLS = 4;
-const CELL_W = 380;
-const CELL_H = 440;
-// Discrete stamp widths for masonry rhythm.
-const WIDTH_BUCKETS = [176, 208, 244];
+const CELL_W = 268;
+const CELL_H = 360;
+// Discrete stamp widths for gentle masonry variation.
+const WIDTH_BUCKETS = [160, 184, 208];
+// Vertical stagger between adjacent columns (brick masonry, like the reference).
+const COL_STAGGER = CELL_H * 0.5;
 
 /**
- * Lay the books out into a jittered grid inside a repeating unit. Grid-based
- * placement tiles seamlessly; per-book seeded jitter and rotation keep it from
- * reading as a rigid grid. Fully deterministic from the book ids.
+ * Lay the books out in a clean upright grid (no scatter, no rotation), with a
+ * per-column vertical stagger so rows read as a light masonry — matching the
+ * tokyo.floguo.com reference. Grid placement + a constant per-column offset
+ * tile seamlessly. Deterministic from the book ids.
  */
 export function computeLayout(books: Book[]): CanvasLayout {
   const rows = Math.max(1, Math.ceil(books.length / COLS));
@@ -62,15 +65,13 @@ export function computeLayout(books: Book[]): CanvasLayout {
     const col = i % cols;
     const row = Math.floor(i / cols);
 
-    const jitterX = (r() - 0.5) * CELL_W * 0.34;
-    const jitterY = (r() - 0.5) * CELL_H * 0.34;
-    const x = (col + 0.5) * CELL_W + jitterX;
-    const y = (row + 0.5) * CELL_H + jitterY;
+    const x = (col + 0.5) * CELL_W;
+    // Constant per-column vertical offset → seamless brick stagger.
+    const y = (row + 0.5) * CELL_H + col * COL_STAGGER;
 
     const width = WIDTH_BUCKETS[Math.floor(r() * WIDTH_BUCKETS.length)];
-    const rotation = (r() - 0.5) * 26; // ±13°
 
-    placements[book.id] = { x, y, width, rotation, seed: book.id };
+    placements[book.id] = { x, y, width, rotation: 0, seed: book.id };
     order.push(book.id);
   });
 

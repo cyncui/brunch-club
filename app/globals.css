@@ -91,18 +91,22 @@ body {
 
 .stamp {
   position: relative;
-  padding: 9px;
+  padding: 11px;
   background: var(--mat);
-  /* Perforated die-cut edge: union of an inset solid interior with a grid of
-     holes, so a ring of scallops is punched around the perimeter. */
-  --perf-r: 5px;
-  --perf-g: 15px;
-  -webkit-mask:
-    linear-gradient(#000 0 0) no-repeat 50% / calc(100% - var(--perf-g)) calc(100% - var(--perf-g)),
-    radial-gradient(circle var(--perf-r), #000 97%, #0000) 0 0 / var(--perf-g) var(--perf-g);
-  mask:
-    linear-gradient(#000 0 0) no-repeat 50% / calc(100% - var(--perf-g)) calc(100% - var(--perf-g)),
-    radial-gradient(circle var(--perf-r), #000 97%, #0000) 0 0 / var(--perf-g) var(--perf-g);
+  /* Perforated die-cut edge. Union of an inset solid interior with a grid of
+     holes whose centers sit exactly on the edges (the stamp's outer width and
+     height are snapped to whole pitch units in Stamp.tsx), so the teeth are
+     even and symmetric on all four sides. */
+  --perf-pitch: 16px;
+  --perf-r: 6px;
+  --perf-mask:
+    linear-gradient(#000 0 0) no-repeat 50% /
+      calc(100% - 2 * var(--perf-r)) calc(100% - 2 * var(--perf-r)),
+    radial-gradient(circle var(--perf-r), #000 98%, #0000)
+      calc(var(--perf-pitch) / -2) calc(var(--perf-pitch) / -2) /
+      var(--perf-pitch) var(--perf-pitch);
+  -webkit-mask: var(--perf-mask);
+  mask: var(--perf-mask);
   -webkit-mask-composite: source-over;
   mask-composite: add;
   filter: drop-shadow(0 3px 5px rgba(60, 50, 30, 0.16))

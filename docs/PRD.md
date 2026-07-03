@@ -350,8 +350,9 @@ book-club/
 
 1. **Theme:** ✅ **Light warm-paper** (matches the attached video) as the primary theme. Dark mode deferred.
 2. **Franking overprint:** ✅ **Yes — subtle** faux postmark/serial on stamps.
-3. **Stamp aperture:** ✅ **Varied, real aspect ratio** — preserve each cover's true proportions in differently-sized/oriented stamps.
-4. **Order:** newest-added first (API default). *(Can revisit.)*
+3. **Stamp aperture:** ✅ **Varied, real aspect ratio** — preserve each cover's true proportions in differently-sized stamps.
+4. **Layout:** ✅ **Upright staggered grid (no scatter, no rotation)** — matches the tokyo.floguo.com reference. Stamps sit level in a clean brick-masonry grid; the hover no longer needs to de-rotate (rest rotation is 0), it just scales up + lifts. (Revised 2026-07-03 from the original scattered/rotated concept.)
+5. **Order:** newest-added first (API default). *(Can revisit.)*
 5. **Intro hero:** include a brief fade-in intro. *(Can revisit during polish.)*
 
 ### Still to confirm (non-blocking, needed at deploy time)
