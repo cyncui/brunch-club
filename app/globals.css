@@ -98,17 +98,24 @@ body {
      height are snapped to whole pitch units in Stamp.tsx), so the teeth are
      even and symmetric on all four sides. */
   --perf-pitch: 16px;
-  --perf-r: 6px;
+  --perf-r: 6.5px;
+  /* A transparent disc (the punched hole) surrounded by opaque paper. */
+  --perf-hole: #0000 98%, #000;
+  /* One row of holes centered on each edge; INTERSECT keeps only the paper
+     that survives every row → concave notches bitten out of all four edges. */
   --perf-mask:
-    linear-gradient(#000 0 0) no-repeat 50% /
-      calc(100% - 2 * var(--perf-r)) calc(100% - 2 * var(--perf-r)),
-    radial-gradient(circle var(--perf-r), #000 98%, #0000)
-      calc(var(--perf-pitch) / -2) calc(var(--perf-pitch) / -2) /
-      var(--perf-pitch) var(--perf-pitch);
+    radial-gradient(var(--perf-r) at 50% 0, var(--perf-hole)) 0 0 /
+      var(--perf-pitch) 100% repeat-x,
+    radial-gradient(var(--perf-r) at 50% 100%, var(--perf-hole)) 0 100% /
+      var(--perf-pitch) 100% repeat-x,
+    radial-gradient(var(--perf-r) at 0 50%, var(--perf-hole)) 0 0 /
+      100% var(--perf-pitch) repeat-y,
+    radial-gradient(var(--perf-r) at 100% 50%, var(--perf-hole)) 100% 0 /
+      100% var(--perf-pitch) repeat-y;
   -webkit-mask: var(--perf-mask);
   mask: var(--perf-mask);
-  -webkit-mask-composite: source-over;
-  mask-composite: add;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
   filter: drop-shadow(0 3px 5px rgba(60, 50, 30, 0.16))
     drop-shadow(0 1px 1px rgba(60, 50, 30, 0.12));
 }
