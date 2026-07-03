@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import type { Book } from "@/lib/types";
 import type { CanvasLayout } from "@/lib/layout";
 import Stamp from "./Stamp";
+import CanvasHero from "./CanvasHero";
 
 type CanvasProps = {
   books: Book[];
@@ -341,6 +342,7 @@ export default function Canvas({ books, layout }: CanvasProps) {
             </div>
           );
         })}
+        <CanvasHero />
       </div>
 
       {focus && (
