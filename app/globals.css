@@ -367,21 +367,48 @@ body {
 .drawer-close:hover {
   background: rgba(38, 34, 27, 0.12);
 }
+/* Grabber handle — only shown on the mobile bottom sheet. */
+.drawer-grab {
+  display: none;
+}
+.drawer-grabber {
+  width: 40px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(60, 48, 24, 0.22);
+}
 
 @media (max-width: 640px) {
   .drawer-panel {
     top: auto;
     bottom: 0;
     width: 100vw;
-    height: 88vh;
+    height: 86vh;
+    max-height: 86dvh;
     border-left: none;
     border-top: 1px solid rgba(60, 48, 24, 0.14);
-    border-radius: 18px 18px 0 0;
+    border-radius: 20px 20px 0 0;
     transform: translateY(100%);
-    box-shadow: 0 -14px 46px rgba(50, 38, 18, 0.18);
+    box-shadow: 0 -14px 46px rgba(50, 38, 18, 0.2);
   }
   .drawer-portal[data-open="true"] .drawer-panel {
     transform: translateY(0);
+  }
+  .drawer-grab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    height: 30px;
+    touch-action: none;
+    cursor: grab;
+  }
+  .drawer-scroll {
+    padding: 8px 22px calc(28px + env(safe-area-inset-bottom));
+  }
+  .drawer-close {
+    top: 12px;
+    right: 14px;
   }
 }
 
@@ -524,7 +551,7 @@ body {
   white-space: nowrap;
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: 37px;
+  font-size: clamp(27px, 7.5vw, 37px);
   line-height: 1;
   margin: 0;
   color: var(--ink);
@@ -538,7 +565,7 @@ body {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 380px;
+  width: min(380px, 92vw);
   height: 390px;
   transform: translate(-50%, -50%);
   background: radial-gradient(
