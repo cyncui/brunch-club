@@ -1,6 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Book } from "@/lib/types";
+import DrawerCover from "./DrawerCover";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -13,13 +14,7 @@ function formatDate(iso: string): string {
 export default function BookDetail({ book }: { book: Book }) {
   return (
     <article className="detail">
-      <div className="detail-cover">
-        <img
-          src={book.cover.large}
-          alt={book.author ? `${book.title} by ${book.author}` : book.title}
-          crossOrigin="anonymous"
-        />
-      </div>
+      <DrawerCover book={book} />
 
       <header className="detail-head">
         <h2 className="detail-title">{book.title}</h2>

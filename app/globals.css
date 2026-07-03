@@ -419,23 +419,12 @@ body {
 
 /* --------------------------------------------------------- Detail */
 
+/* The cover renders as a stamp (see DrawerCover) which brings its own frame,
+   perforation, paper treatment, and shadow. */
 .detail-cover {
-  width: 100%;
   display: flex;
   justify-content: center;
-  margin-bottom: 26px;
-}
-.detail-cover img {
-  max-width: 62%;
-  height: auto;
-  border-radius: 2px;
-  /* Subtle pure-black outline so the cover has a crisp edge on any surface. */
-  outline: 1px solid rgba(0, 0, 0, 0.1);
-  outline-offset: -1px;
-  box-shadow:
-    0 1px 1px rgba(40, 30, 15, 0.14),
-    0 10px 26px rgba(40, 30, 15, 0.2);
-  filter: saturate(0.9) contrast(0.97);
+  margin: 6px 0 30px;
 }
 .detail-head {
   margin-bottom: 26px;
