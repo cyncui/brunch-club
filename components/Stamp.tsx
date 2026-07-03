@@ -10,7 +10,7 @@ type StampProps = {
   eager?: boolean;
 };
 
-const PAD = 6;
+const PAD = 11;
 /** Perforation pitch — MUST match `--perf-pitch` in globals.css. */
 export const PERF_PITCH = 12;
 

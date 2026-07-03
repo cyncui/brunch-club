@@ -36,9 +36,9 @@ function rng(seed: number): () => number {
   };
 }
 
-const COLS = 4;
-const CELL_W = 180;
-const CELL_H = 246;
+const COLS = 3;
+const CELL_W = 288;
+const CELL_H = 372;
 // Discrete stamp widths for gentle masonry variation.
 const WIDTH_BUCKETS = [116, 132, 150];
 

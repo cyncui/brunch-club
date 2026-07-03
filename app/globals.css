@@ -95,7 +95,7 @@ body {
 
 .stamp {
   position: relative;
-  padding: 6px;
+  padding: 11px;
   background: var(--mat);
   /* Perforated die-cut edge. Union of an inset solid interior with a grid of
      holes whose centers sit exactly on the edges (the stamp's outer width and
@@ -534,13 +534,13 @@ body {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 480px;
-  height: 300px;
+  width: 380px;
+  height: 390px;
   transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse at center,
-    var(--paper) 66%,
-    rgba(242, 237, 225, 0) 87%
+    var(--paper) 62%,
+    rgba(242, 237, 225, 0) 84%
   );
   z-index: -1;
   pointer-events: none;
