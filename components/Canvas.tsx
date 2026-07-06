@@ -98,19 +98,29 @@ export default function Canvas({ books, layout }: CanvasProps) {
     return Math.min(1, Math.max(0.56, viewport.w / 780));
   }, [viewport.w]);
 
+  // On phones, tighten the grid spacing (positions only, not stamp size) so the
+  // canvas reads denser without shrinking the covers.
+  const gridScale = useMemo(
+    () => scale * (viewport.w && viewport.w <= 640 ? 0.72 : 1),
+    [scale, viewport.w],
+  );
+
   const slayout = useMemo(
     () => ({
-      unitW: layout.unitW * scale,
-      unitH: layout.unitH * scale,
+      unitW: layout.unitW * gridScale,
+      unitH: layout.unitH * gridScale,
       slots: layout.slots.map((s) => ({
         ...s,
-        x: s.x * scale,
-        y: s.y * scale,
+        x: s.x * gridScale,
+        y: s.y * gridScale,
         width: s.width * scale,
       })),
-      masthead: { x: layout.masthead.x * scale, y: layout.masthead.y * scale },
+      masthead: {
+        x: layout.masthead.x * gridScale,
+        y: layout.masthead.y * gridScale,
+      },
     }),
-    [layout, scale],
+    [layout, scale, gridScale],
   );
 
   // How many copies of the base unit we need to blanket the viewport.
@@ -425,7 +435,9 @@ export default function Canvas({ books, layout }: CanvasProps) {
             }}
             className="tile-pos masthead-pos"
           >
-            <h1 className="masthead-canvas">Book Club Archive</h1>
+            <h1 className="masthead-canvas">
+              Book Club <br className="mh-break" />Archive
+            </h1>
           </div>
         ))}
 

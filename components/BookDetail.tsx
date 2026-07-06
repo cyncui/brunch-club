@@ -47,13 +47,6 @@ export default function BookDetail({ book }: { book: Book }) {
 
       <footer className="detail-foot">
         <span>Added {formatDate(book.addedAt)}</span>
-        <a
-          href={`https://www.are.na/block/${book.id}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          View on Are.na ↗
-        </a>
       </footer>
     </article>
   );
