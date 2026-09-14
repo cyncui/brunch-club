@@ -1,95 +1,101 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import type { Book } from "@/lib/types";
 import BookDetail from "./BookDetail";
 
-/**
- * Reading panel. Desktop: a right-side drawer that slides in. Mobile: a
- * bottom-up sheet with a grabber and drag-to-dismiss. Closes by navigating
- * back to the canvas (which stays mounted behind it via the intercepting route).
- */
-export default function Drawer({ book }: { book: Book }) {
+export default function Drawer({ book, onClose, animateEntry = true }: { book: Book; onClose?: () => void; animateEntry?: boolean }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-
-  // Bottom-sheet drag-to-dismiss (mobile).
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closingRef = useRef(false);
+  const completedRef = useRef(false);
+  const [closing, setClosing] = useState(false);
   const [dragY, setDragY] = useState(0);
-  const [dragging, setDragging] = useState(false);
   const startY = useRef<number | null>(null);
+  const dragDistance = useRef(0);
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setOpen(true));
-    return () => cancelAnimationFrame(id);
+  useLayoutEffect(() => {
+    const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = dialogRef.current;
+    dialog?.showModal();
+    return () => {
+      dialog?.close();
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+    };
   }, []);
 
-  // Blur the canvas behind while the drawer is open (fades with the slide).
-  useEffect(() => {
-    document.documentElement.classList.toggle("drawer-open", open);
-    return () => document.documentElement.classList.remove("drawer-open");
-  }, [open]);
+  const finishClose = useCallback(() => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    dialogRef.current?.close();
+    if (onClose) onClose();
+    else router.back();
+  }, [onClose, router]);
 
-  const close = useCallback(() => {
-    setOpen(false);
-    // Let the slide-out play before unmounting via navigation.
-    setTimeout(() => router.back(), 380);
-  }, [router]);
+  const close = useCallback((instant = false) => {
+    if (instant) { finishClose(); return; }
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+  }, [finishClose]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [close]);
-
-  const onGrabStart = (e: React.TouchEvent) => {
-    startY.current = e.touches[0].clientY;
-    setDragging(true);
-  };
-  const onGrabMove = (e: React.TouchEvent) => {
-    if (startY.current == null) return;
-    setDragY(Math.max(0, e.touches[0].clientY - startY.current));
-  };
-  const onGrabEnd = () => {
-    setDragging(false);
-    startY.current = null;
-    if (dragY > 110) close();
-    else setDragY(0);
-  };
-
-  const panelStyle =
-    dragY > 0
-      ? { transform: `translateY(${dragY}px)`, transition: dragging ? "none" : undefined }
-      : undefined;
+  useLayoutEffect(() => {
+    if (!closing) return;
+    let active = true;
+    // Wait for the actual transitions, including reduced motion or an interrupted entry.
+    const animations = dialogRef.current?.getAnimations() ?? [];
+    Promise.allSettled(animations.map((animation) => animation.finished)).then(() => {
+      if (active) finishClose();
+    });
+    return () => { active = false; };
+  }, [closing, finishClose]);
 
   return (
-    <div className="drawer-portal" data-open={open}>
-      <div className="drawer-scrim" onClick={close} />
-      <aside
-        className="drawer-panel"
-        style={panelStyle}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${book.title}${book.author ? ` by ${book.author}` : ""}`}
+    <dialog
+      ref={dialogRef}
+      className="drawer-panel"
+      data-closing={closing}
+      data-animate-entry={animateEntry}
+      data-dragging={!closing && dragY > 0}
+      aria-label={`${book.title}${book.author ? ` by ${book.author}` : ""}`}
+      onCancel={(event) => { event.preventDefault(); close(true); }}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        const bounds = event.currentTarget.getBoundingClientRect();
+        if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) close();
+      }}
+      style={!closing && dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
+    >
+      <div
+        className="drawer-grab"
+        aria-hidden="true"
+        onTouchStart={(event) => {
+          if (closingRef.current || event.touches.length !== 1) return;
+          startY.current = event.touches[0].clientY;
+          dragDistance.current = 0;
+        }}
+        onTouchMove={(event) => {
+          if (startY.current === null) return;
+          dragDistance.current = Math.max(0, event.touches[0].clientY - startY.current);
+          setDragY(dragDistance.current);
+        }}
+        onTouchEnd={() => {
+          startY.current = null;
+          if (dragDistance.current > 110) close();
+          else setDragY(0);
+        }}
+        onTouchCancel={() => { startY.current = null; dragDistance.current = 0; setDragY(0); }}
       >
-        <div
-          className="drawer-grab"
-          onTouchStart={onGrabStart}
-          onTouchMove={onGrabMove}
-          onTouchEnd={onGrabEnd}
-        >
-          <span className="drawer-grabber" aria-hidden="true" />
-        </div>
-        <button className="drawer-close" onClick={close} aria-label="Close">
-          <X size={18} strokeWidth={1.75} />
-        </button>
-        <div className="drawer-scroll">
-          <BookDetail book={book} />
-        </div>
-      </aside>
-    </div>
+        <span className="drawer-grabber" />
+      </div>
+      <button className="drawer-close" onClick={(event) => close(event.detail === 0)} aria-label="Close" autoFocus>
+        <X size={18} strokeWidth={1.75} />
+      </button>
+      <div className="drawer-scroll">
+        <BookDetail book={book} />
+      </div>
+    </dialog>
   );
 }

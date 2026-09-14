@@ -3,9 +3,9 @@
 An infinite-canvas micro-site for a personal book club archive, sourced live from
 [Are.na](https://www.are.na/cynthia/book-club-archive). Book covers are rendered as
 paper-treated **postage stamps** scattered across a warm, pannable canvas. Hover a
-stamp for a rack-focus lift (it grows, straightens, and captions itself while the
-rest of the canvas blurs); click it to slide open a reading drawer with the synopsis
-and personal notes.
+stamp for a subtle lift and title; click it to immediately open a reading drawer
+with the synopsis and personal notes. Tab through books and press Enter to read.
+The canvas loads progressively without a blocking splash screen.
 
 Lives at **books.cynthia.land**.
 
@@ -26,8 +26,8 @@ Lives at **books.cynthia.land**.
 | Deterministic layout | `lib/layout.ts` | Seeded scatter/rotation/size per book so the canvas is stable across renders. |
 | Infinite canvas | `components/Canvas.tsx` | Recycled tile pool; drag-to-pan with inertia; per-frame `translate3d` written imperatively via rAF; seamless modulo wrapping. |
 | Stamp | `components/Stamp.tsx` + `app/globals.css` | Perforated die-cut edge (CSS mask), paper grain, warm/muted print treatment, franking + postmark. |
-| Rack-focus hover | `components/Canvas.tsx` | Single blur layer over the field + a sharp overlay clone of the hovered stamp with a caption pill. |
-| Reading drawer | `app/@drawer/…` + `components/Drawer.tsx` | Intercepting route (`/book/[slug]`) slides a panel over the still-mounted canvas; hard links hit the full-page fallback at `app/book/[slug]`. |
+| Book interactions | `components/Canvas.tsx` + `app/globals.css` | Real book links with matching hover hit areas; one keyboard stop per book, brought into view on focus. |
+| Reading drawer | `components/Canvas.tsx` + `components/Drawer.tsx` | Opens from loaded data in a native modal dialog. Native history tracks `/book/[slug]` without waiting on navigation; Back/Forward closes/reopens it. Hard links render `app/book/[slug]`; the intercepting route remains a fallback. |
 
 The full product spec is in [`docs/PRD.md`](docs/PRD.md).
 
