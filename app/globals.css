@@ -19,12 +19,7 @@
      so only creases/specks show under multiply; bump up for heavier aging. */
   --stamp-paper-opacity: 0.42;
 
-  /* Rack-focus tuning (see PRD §6). */
-  --focus-scale: 1.52;
-  --focus-blur: 6px;
-  --focus-dim: 0.62;
   --focus-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --focus-dur: 260ms;
   --drawer-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
@@ -60,16 +55,12 @@ body {
 .canvas-root {
   position: fixed;
   inset: 0;
-  overflow: hidden;
-  touch-action: none;
+  /* Focus must not scroll the transformed tile pool. */
+  overflow: clip;
+  touch-action: pinch-zoom;
   user-select: none;
   -webkit-user-select: none;
   cursor: grab;
-  transition: filter 380ms var(--drawer-ease);
-}
-/* Blur the whole canvas while the reading drawer is open. */
-.drawer-open .canvas-root {
-  filter: blur(9px);
 }
 .canvas-root.dragging {
   cursor: grabbing;
@@ -78,14 +69,6 @@ body {
 .field {
   position: absolute;
   inset: 0;
-  transition:
-    filter var(--focus-dur) var(--focus-ease),
-    opacity var(--focus-dur) var(--focus-ease);
-  will-change: filter;
-}
-/* Rack focus: the whole field recedes when a stamp is in focus. */
-.canvas-root.focusing .field {
-  filter: blur(var(--focus-blur)) brightness(var(--focus-dim)) saturate(0.92);
 }
 
 /* -------------------------------------------------------------- Stamp */
@@ -222,105 +205,108 @@ body {
   height: 0;
   will-change: transform;
 }
-/* The visible, interactive stamp — centered on the wrapper origin. */
+/* The cover and its hit area transform together. */
 .tile {
   display: inline-block;
+  position: relative;
   cursor: pointer;
+  color: inherit;
+  transform: translate(-50%, -50%) rotate(var(--rotation));
+  transition: transform 160ms var(--focus-ease);
 }
-
-/* ---------------------------------------------------- Focus overlay */
-
-.focus-overlay {
-  position: fixed;
-  z-index: 40;
+.tile-pos:has(.tile:hover),
+.tile-pos:has(.tile:focus-visible) { z-index: 5; }
+.tile .stamp::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  opacity: 0.5;
   pointer-events: none;
-  transform-origin: center center;
-  transition:
-    transform var(--focus-dur) var(--focus-ease),
-    filter var(--focus-dur) var(--focus-ease);
-  filter: drop-shadow(0 18px 34px rgba(50, 38, 18, 0.28))
-    drop-shadow(0 6px 12px rgba(50, 38, 18, 0.18));
+  transition: opacity 140ms ease-out;
 }
+.tile:focus-visible .stamp::after,
+.tile:active .stamp::after { opacity: 0; }
+@media (hover: hover) and (pointer: fine) {
+  .canvas-root:not(.dragging) .tile:hover {
+    transform: translate(-50%, -50%) rotate(0deg) scale(1.12);
+  }
+  .canvas-root:not(.dragging) .tile:hover .caption { opacity: 1; }
+  .canvas-root:not(.dragging) .tile:hover .stamp::after { opacity: 0; }
+}
+.tile:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 5px;
+}
+.tile:focus-visible .caption { opacity: 1; }
+.tile:active { transform: translate(-50%, -50%) scale(1.02); }
 
 .caption {
   position: absolute;
+  z-index: 1;
   left: 50%;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   transform: translateX(-50%);
-  white-space: nowrap;
+  width: max-content;
+  max-width: min(240px, 75vw);
   background: var(--pill-bg);
   color: var(--pill-fg);
-  font-family: var(--font-sans);
-  font-size: 7.5px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 3px 7px;
-  border-radius: 999px;
-  box-shadow: 0 3px 9px rgba(40, 30, 15, 0.2);
+  font-size: 11px;
+  line-height: 1.35;
+  padding: 5px 8px;
+  border-radius: 6px;
   opacity: 0;
-  transition:
-    opacity var(--focus-dur) var(--focus-ease),
-    transform var(--focus-dur) var(--focus-ease);
-  transform: translateX(-50%) translateY(6px);
-}
-/* Flip below the stamp when there isn't room above (top-row stamps). */
-.caption.below {
-  bottom: auto;
-  top: calc(100% + 8px);
-  transform: translateX(-50%) translateY(-6px);
-}
-.focus-overlay.on .caption {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+  pointer-events: none;
+  transition: opacity 100ms ease-out;
 }
 
 /* --------------------------------------------------------- Drawer */
 
-.drawer-portal {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-}
-.drawer-scrim {
-  position: absolute;
-  inset: 0;
-  background: rgba(40, 32, 16, 0.14);
-  opacity: 0;
-  transition: opacity 380ms var(--drawer-ease);
-}
-.drawer-portal[data-open="true"] .drawer-scrim {
-  opacity: 1;
-}
-
 .drawer-panel {
-  position: absolute;
-  top: 0;
-  right: 0;
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  padding: 0;
   height: 100%;
+  max-height: 100%;
   width: min(500px, 100vw);
-  /* Fully opaque: solid base + opaque gradient, grain on top. */
+  max-width: 100vw;
+  color: var(--ink);
   background-color: var(--paper-hi);
-  background-image:
-    url("/textures/grain.svg"),
-    linear-gradient(180deg, var(--paper-hi), var(--paper));
+  background-image: url("/textures/grain.svg"), linear-gradient(180deg, var(--paper-hi), var(--paper));
   background-size: 200px 200px, cover;
-  background-repeat: repeat, no-repeat;
+  border: 0;
   border-left: 1px solid rgba(60, 48, 24, 0.14);
   box-shadow: -14px 0 46px rgba(50, 38, 18, 0.16);
-  transform: translateX(100%);
-  transition: transform 380ms var(--drawer-ease);
+  overflow: hidden;
+}
+.drawer-panel[open] {
   display: flex;
   flex-direction: column;
-}
-.drawer-portal[data-open="true"] .drawer-panel {
   transform: translateX(0);
-  /* Enter ~50% quicker than it leaves. */
-  transition: transform 190ms var(--drawer-ease);
+  opacity: 1;
+  transition: transform 260ms var(--drawer-ease), opacity 200ms var(--drawer-ease);
+}
+.drawer-panel::backdrop {
+  background: rgba(40, 32, 16, 0.18);
+  opacity: 1;
+  transition: opacity 200ms var(--drawer-ease);
+}
+.drawer-panel[data-closing="true"] {
+  transform: translateX(100%);
+  transition-duration: 200ms;
+}
+.drawer-panel[data-closing="true"]::backdrop { opacity: 0; }
+.drawer-panel[data-dragging="true"] { transition: none; }
+@starting-style {
+  .drawer-panel[open][data-animate-entry="true"] { transform: translateX(100%); }
+  .drawer-panel[open][data-animate-entry="true"]::backdrop { opacity: 0; }
 }
 .drawer-scroll {
   overflow-y: auto;
-  height: 100%;
+  min-height: 0;
+  flex: 1;
+  overscroll-behavior: contain;
   padding: 56px 34px 48px;
   -webkit-overflow-scrolling: touch;
   /* Hide the scrollbar (still scrollable) — cleaner on desktop. */
@@ -334,8 +320,8 @@ body {
   top: 14px;
   right: 14px;
   z-index: 2;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: grid;
   place-items: center;
   border: none;
@@ -374,28 +360,25 @@ body {
     border-left: none;
     border-top: 1px solid rgba(60, 48, 24, 0.14);
     border-radius: 20px 20px 0 0;
-    transform: translateY(100%);
     box-shadow: 0 -14px 46px rgba(50, 38, 18, 0.2);
   }
-  .drawer-portal[data-open="true"] .drawer-panel {
-    transform: translateY(0);
+  .drawer-panel[data-closing="true"] { transform: translateY(100%); }
+  @starting-style {
+    .drawer-panel[open][data-animate-entry="true"] { transform: translateY(100%); }
   }
   .drawer-grab {
     display: flex;
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    height: 30px;
+    height: 52px;
     touch-action: none;
     cursor: grab;
   }
   .drawer-scroll {
     padding: 8px 22px calc(28px + env(safe-area-inset-bottom));
   }
-  /* The grabber (drag-to-dismiss) replaces the close button on mobile. */
-  .drawer-close {
-    display: none;
-  }
+  .drawer-close { top: 4px; right: 8px; }
 }
 
 /* --------------------------------------------------------- Detail */
@@ -477,36 +460,6 @@ body {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
-}
-
-/* Stagger the drawer content in as the panel arrives. */
-@keyframes detail-rise {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.detail > * {
-  animation: detail-rise 460ms var(--focus-ease) both;
-}
-.detail > *:nth-child(1) {
-  animation-delay: 90ms;
-}
-.detail > *:nth-child(2) {
-  animation-delay: 150ms;
-}
-.detail > *:nth-child(3) {
-  animation-delay: 210ms;
-}
-.detail > *:nth-child(4) {
-  animation-delay: 270ms;
-}
-.detail > *:nth-child(5) {
-  animation-delay: 330ms;
 }
 
 /* ------------------------------------------------- Book full page */
@@ -613,74 +566,13 @@ body {
   }
 }
 
-/* ----------------------------------------------------- Loading screen */
-
-.loader-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(120% 120% at 50% 45%, var(--paper-hi) 30%, var(--paper) 70%, var(--paper-lo) 100%),
-    url("/textures/grain.svg");
-  background-size: cover, 220px 220px;
-  transition: opacity 620ms var(--focus-ease), visibility 620ms;
-}
-.loader-screen.gone {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-.loader-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  animation: loader-rise 700ms var(--focus-ease) both;
-}
-.loader-inner canvas {
-  opacity: 0.92;
-}
-.loader-text {
-  font-family: var(--font-display);
-  font-size: 21px;
-  letter-spacing: 0.01em;
-  color: var(--ink-soft);
-  animation: loader-pulse 2.4s ease-in-out infinite;
-}
-@keyframes loader-rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes loader-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 0.9;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .field,
-  .focus-overlay,
-  .caption {
-    transition-duration: 1ms !important;
+  .tile, .tile .stamp::after, .caption, .drawer-close { transition: none; }
+  .drawer-panel[open], .drawer-panel[data-closing="true"] { transform: none; }
+  .drawer-panel[data-closing="true"] { opacity: 0; }
+  @starting-style {
+    .drawer-panel[open][data-animate-entry="true"] { transform: none; opacity: 0; }
   }
-  .canvas-root.focusing .field {
-    filter: brightness(0.9) !important;
-  }
-  .loader-text,
-  .loader-inner,
-  .detail > * {
-    animation: none !important;
-  }
+  .canvas-root:not(.dragging) .tile:hover,
+  .tile:active { transform: translate(-50%, -50%) rotate(var(--rotation)); }
 }

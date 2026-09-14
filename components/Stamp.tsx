@@ -9,6 +9,7 @@ type StampProps = {
   aspect: number;
   /** Eager-load (used for the few unique preloaded covers). */
   eager?: boolean;
+  onAspect?: (aspect: number) => void;
 };
 
 // Fixed number of perforations across the width; the mat and hole size are a
@@ -24,7 +25,7 @@ const HOLE_RATIO = 0.38; // perforation radius as a fraction of the pitch
  * The pitch is derived from the width so a whole number of teeth always fits,
  * and the outer height is snapped to that pitch — even teeth on all four sides.
  */
-export default function Stamp({ book, width, aspect, eager = false }: StampProps) {
+export default function Stamp({ book, width, aspect, eager = false, onAspect }: StampProps) {
   const pitch = width / TEETH_X;
   const pad = Math.max(3, Math.round(width * PAD_RATIO));
   const innerW = width - pad * 2;
@@ -50,6 +51,10 @@ export default function Stamp({ book, width, aspect, eager = false }: StampProps
           crossOrigin="anonymous"
           draggable={false}
           loading={eager ? "eager" : "lazy"}
+          onLoad={onAspect ? (event) => {
+            const image = event.currentTarget;
+            if (image.naturalWidth) onAspect(image.naturalHeight / image.naturalWidth);
+          } : undefined}
         />
         <div className="stamp-postmark">
           2026

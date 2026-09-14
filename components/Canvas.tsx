@@ -8,10 +8,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
 import type { Book } from "@/lib/types";
 import type { CanvasLayout } from "@/lib/layout";
 import Stamp from "./Stamp";
+import Drawer from "./Drawer";
 
 type CanvasProps = {
   books: Book[];
@@ -34,17 +34,30 @@ type TileInstance = {
 const DRAG_THRESHOLD = 5;
 const FRICTION = 0.94;
 const DEFAULT_ASPECT = 1.46;
-// Keep in sync with --focus-scale in globals.css.
-const FOCUS_SCALE = 1.52;
-// Vertical room the caption tag needs (tag height + gap + margin).
-const CAPTION_ROOM = 34;
 
 function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
 }
 
 export default function Canvas({ books, layout }: CanvasProps) {
-  const router = useRouter();
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const openingRef = useRef(false);
+  const animateEntryRef = useRef(false);
+  useEffect(() => {
+    const syncHistory = () => {
+      const slug = window.location.pathname.split("/book/")[1];
+      animateEntryRef.current = false;
+      setSelectedBook(books.find((book) => book.slug === slug) ?? null);
+      openingRef.current = false;
+    };
+    window.addEventListener("popstate", syncHistory);
+    return () => window.removeEventListener("popstate", syncHistory);
+  }, [books]);
+
+  const closeBook = useCallback(() => {
+    setSelectedBook(null);
+    window.history.back();
+  }, []);
   const rootRef = useRef<HTMLDivElement>(null);
 
   const bookById = useMemo(() => {
@@ -57,25 +70,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
   const [aspects, setAspects] = useState<Record<number, number>>(() =>
     Object.fromEntries(books.map((b) => [b.id, DEFAULT_ASPECT])),
   );
-
-  useEffect(() => {
-    let alive = true;
-    books.forEach((b) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        if (!alive || !img.naturalWidth) return;
-        setAspects((prev) => ({
-          ...prev,
-          [b.id]: img.naturalHeight / img.naturalWidth,
-        }));
-      };
-      img.src = b.cover.display;
-    });
-    return () => {
-      alive = false;
-    };
-  }, [books]);
 
   // Track the viewport so the layout can scale down on smaller screens.
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
@@ -170,7 +164,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
 
   // ---- Pan engine (imperative; transforms written straight to the DOM) ----
   const tileEls = useRef<Map<string, HTMLDivElement>>(new Map());
-  const focusedKeyRef = useRef<string | null>(null);
   const offset = useRef({ x: 0, y: 0 });
   const velocity = useRef({ x: 0, y: 0 });
   const dirty = useRef(true);
@@ -191,7 +184,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
     const { x: ox, y: oy } = offset.current;
     const uW = slayout.unitW;
     const uH = slayout.unitH;
-    const fKey = focusedKeyRef.current;
     for (const t of tiles) {
       const el = tileEls.current.get(t.key);
       if (!el) continue;
@@ -203,9 +195,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
       const wx = mod(t.bx + ox, uW) + (t.cx - 1) * uW;
       const wy = mod(t.by + oy, uH) + (t.cy - 1) * uH;
       el.style.transform = `translate3d(${wx}px, ${wy}px, 0)`;
-      // Focused stamp hides beneath the overlay but stays interactive so the
-      // pointer stays "over" it and the hover doesn't drop.
-      el.style.opacity = fKey === t.key ? "0" : "1";
     }
   }, [tiles, slayout.unitW, slayout.unitH]);
 
@@ -268,8 +257,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
     // We capture only once a drag actually starts (below).
   }, []);
 
-  const clearFocusRef = useRef<() => void>(() => {});
-
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     const p = pointer.current;
     if (!p.down) return;
@@ -279,7 +266,6 @@ export default function Canvas({ books, layout }: CanvasProps) {
       p.moved = true;
       userPannedRef.current = true; // stop auto-centering once the user pans
       setDragging(true);
-      clearFocusRef.current();
       // Capture now (a real drag) so the pan keeps tracking off-target.
       try {
         (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -303,165 +289,104 @@ export default function Canvas({ books, layout }: CanvasProps) {
     if (!p.down) return;
     p.down = false;
     if (p.moved) {
-      inertia.current = true;
+      inertia.current = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       setDragging(false);
     }
   }, []);
 
-  // ---- Rack-focus hover state ----
-  const [focus, setFocus] = useState<{
-    book: Book;
-    tileKey: string;
-    width: number;
-    aspect: number;
-    rotation: number;
-    px: number;
-    py: number;
-    captionBelow: boolean;
-  } | null>(null);
-  const [focusOn, setFocusOn] = useState(false);
-  const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openBook = (book: Book, event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    if (pointer.current.moved && event.detail !== 0) return;
+    if (openingRef.current) return;
+    openingRef.current = true;
+    animateEntryRef.current = event.detail !== 0;
+    inertia.current = false;
+    window.history.pushState(null, "", `/book/${book.slug}`);
+    setSelectedBook(book);
+  };
 
-  const clearFocus = useCallback(() => {
-    setFocusOn(false);
-    focusedKeyRef.current = null;
-    dirty.current = true; // restore the just-unhidden stamp's opacity
-    if (exitTimer.current) clearTimeout(exitTimer.current);
-    exitTimer.current = setTimeout(() => setFocus(null), 280);
-  }, []);
-
-  const clearFocusInstant = useCallback(() => {
-    if (exitTimer.current) clearTimeout(exitTimer.current);
-    setFocusOn(false);
-    focusedKeyRef.current = null;
-    dirty.current = true;
-    setFocus(null);
-  }, []);
-  clearFocusRef.current = clearFocusInstant;
-
-  const onTileEnter = useCallback(
-    (t: TileInstance, e: React.PointerEvent) => {
-      if (!t.book || pointer.current.down || e.pointerType === "touch") return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      if (exitTimer.current) clearTimeout(exitTimer.current);
-      focusedKeyRef.current = t.key;
-      dirty.current = true; // hide the hovered stamp beneath the overlay
-      const py = rect.top + rect.height / 2;
-      // Top of the enlarged stamp; if the tag above it would clip off the top
-      // of the viewport, flip the tag below the stamp instead.
-      const scaledTop = py - (rect.height * FOCUS_SCALE) / 2;
-      const captionBelow = scaledTop < CAPTION_ROOM;
-      // Anchor the overlay to the hovered tile's center (rotation-invariant).
-      setFocus({
-        book: t.book,
-        tileKey: t.key,
-        width: t.width,
-        aspect: aspects[t.book.id] ?? DEFAULT_ASPECT,
-        rotation: t.rotation,
-        px: rect.left + rect.width / 2,
-        py,
-        captionBelow,
-      });
-      requestAnimationFrame(() => setFocusOn(true));
-    },
-    [aspects],
-  );
-
-  const openBook = useCallback(
-    (book: Book) => {
-      if (pointer.current.moved) return;
-      clearFocus();
-      router.push(`/book/${book.slug}`, { scroll: false });
-    },
-    [router, clearFocus],
-  );
+  const revealTile = (t: TileInstance) => {
+    inertia.current = false;
+    userPannedRef.current = true;
+    const x = mod(t.bx + offset.current.x, slayout.unitW) + (t.cx - 1) * slayout.unitW;
+    const y = mod(t.by + offset.current.y, slayout.unitH) + (t.cy - 1) * slayout.unitH;
+    offset.current.x += viewport.w / 2 - x;
+    offset.current.y += viewport.h / 2 - y;
+    writeTransforms();
+  };
 
   return (
-    <div
-      ref={rootRef}
-      className={`canvas-root${dragging ? " dragging" : ""}${
-        focus ? " focusing" : ""
-      }`}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={endPointer}
-      onPointerCancel={endPointer}
-      role="application"
-      aria-label="Book club archive canvas. Drag to explore; click a stamp to read."
-    >
-      <div className="field">
-        {tiles.map((t) => {
-          if (t.masthead) return null;
-          const setRef = (el: HTMLDivElement | null) => {
-            if (el) tileEls.current.set(t.key, el);
-            else tileEls.current.delete(t.key);
-          };
-          return (
-            <div key={t.key} ref={setRef} className="tile-pos">
-              <div
-                className="tile"
-                style={{
-                  transform: `translate(-50%, -50%) rotate(${t.rotation}deg)`,
-                }}
-                onPointerEnter={(e) => onTileEnter(t, e)}
-                onPointerLeave={() => {
-                  if (focus && focus.tileKey === t.key) clearFocus();
-                }}
-                onClick={() => t.book && openBook(t.book)}
-              >
-                <Stamp
-                  book={t.book!}
-                  width={t.width}
-                  aspect={aspects[t.book!.id] ?? DEFAULT_ASPECT}
-                  eager={t.cx === 1 && t.cy === 1}
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Masthead lives OUTSIDE .field so the rack-focus blur/dim never touches
-          it — its clearing stays bright paper and cleanly covers the stamp
-          behind it on hover. */}
-      {tiles
-        .filter((t) => t.masthead)
-        .map((t) => (
-          <div
-            key={t.key}
-            ref={(el) => {
+    <>
+      <div
+        ref={rootRef}
+        className={`canvas-root${dragging ? " dragging" : ""}`}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endPointer}
+        onPointerCancel={endPointer}
+        role="region"
+        aria-label="Book club archive. Drag to explore, or use Tab to browse books and Enter to read."
+      >
+        <div className="field">
+          {tiles.map((t) => {
+            if (t.masthead) return null;
+            const setRef = (el: HTMLDivElement | null) => {
               if (el) tileEls.current.set(t.key, el);
               else tileEls.current.delete(t.key);
-            }}
-            className="tile-pos masthead-pos"
-          >
-            <h1 className="masthead-canvas">
-              Book Club <br className="mh-break" />Archive
-            </h1>
-          </div>
-        ))}
-
-      {focus && (
-        <div
-          className={`focus-overlay${focusOn ? " on" : ""}`}
-          style={{
-            left: focus.px,
-            top: focus.py,
-            transform: `translate(-50%, -50%) rotate(${
-              focusOn ? 0 : focus.rotation
-            }deg) scale(${focusOn ? "var(--focus-scale)" : 1})`,
-          }}
-        >
-          <div className={`caption${focus.captionBelow ? " below" : ""}`}>
-            {focus.book.title}
-          </div>
-          <Stamp
-            book={focus.book}
-            width={focus.width}
-            aspect={focus.aspect}
-          />
+            };
+            return (
+              <div key={t.key} ref={setRef} className="tile-pos" aria-hidden={t.cx !== 1 || t.cy !== 1}>
+                <a
+                  className="tile"
+                  style={{
+                    "--rotation": `${t.rotation}deg`,
+                  } as React.CSSProperties}
+                  href={`/book/${t.book!.slug}`}
+                  draggable={false}
+                  aria-label={`${t.book!.title}${t.book!.author ? ` by ${t.book!.author}` : ""}`}
+                  tabIndex={t.cx === 1 && t.cy === 1 ? 0 : -1}
+                  onFocus={(event) => {
+                    if (!pointer.current.down && event.currentTarget.matches(":focus-visible")) revealTile(t);
+                  }}
+                  onClick={(event) => t.book && openBook(t.book, event)}
+                  data-book-id={t.book!.id}
+                >
+                  <span className="caption">{t.book!.title}</span>
+                  <Stamp
+                    book={t.book!}
+                    width={t.width}
+                    aspect={aspects[t.book!.id] ?? DEFAULT_ASPECT}
+                    onAspect={(aspect) => setAspects((previous) =>
+                      previous[t.book!.id] === aspect ? previous : { ...previous, [t.book!.id]: aspect },
+                    )}
+                  />
+                </a>
+              </div>
+            );
+          })}
         </div>
-      )}
-    </div>
+
+        {/* The masthead clearing masks the stamp underneath it. */}
+        {tiles
+          .filter((t) => t.masthead)
+          .map((t) => (
+            <div
+              key={t.key}
+              ref={(el) => {
+                if (el) tileEls.current.set(t.key, el);
+                else tileEls.current.delete(t.key);
+              }}
+              className="tile-pos masthead-pos"
+            >
+              <h1 className="masthead-canvas">
+                Book Club <br className="mh-break" />Archive
+              </h1>
+            </div>
+          ))}
+
+      </div>
+      {selectedBook && <Drawer key={selectedBook.id} book={selectedBook} onClose={closeBook} animateEntry={animateEntryRef.current} />}
+    </>
   );
 }
